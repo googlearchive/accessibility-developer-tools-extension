@@ -1,3 +1,6 @@
 [submodule "lib/templates"]
 	path = lib/templates
 	url = https://github.com/kalman/templates.git
+[submodule "lib/accessibility-developer-tools"]
+	path = lib/accessibility-developer-tools
+	url = https://code.google.com/p/accessibility-developer-tools/
