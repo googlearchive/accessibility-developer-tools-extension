@@ -18,6 +18,10 @@ function updateView(result) {
         result = {};
     }
     console.log('result', result);
+    if (typeof result != 'object') {
+        console.warn('non-object result:', result);
+        return;
+    }
 
     var main = document.getElementById('main');
     main.innerHTML = '';
@@ -38,6 +42,10 @@ function updateView(result) {
         } catch (ex) {
             console.error('Could not render results section', section, ex);
         }
+
+        if (sectionName == 'colorProperties' && 'contrastRatio' in section &&
+            'suggestedColors' in section['contrastRatio'])
+            insertStyleChangeEventListeners(section);
     }
 
     if (!foundProperty) {
@@ -70,11 +78,11 @@ function insertIdrefEventListeners() {
     for (var i = 0; i < elementsWithIdref.length; i++) {
         var element = elementsWithIdref[i];
         var idref = element.getAttribute('idref');
-        addEventListener(element, idref);
+        addIdRefEventListener(element, idref);
     }
 }
 
-function addEventListener(element, idref) {
+function addIdRefEventListener(element, idref) {
     element.addEventListener('click',
                              function() {
         chrome.devtools.inspectedWindow.eval(
@@ -82,6 +90,53 @@ function addEventListener(element, idref) {
             'if (element) inspect(element);'
         );
     });
+}
+
+function insertStyleChangeEventListeners(colorProperties) {
+    var existingColorsEl = document.querySelector('#contrast-ratio > .bevel-border');
+    console.log('existingColorsEl', existingColorsEl);
+    var contrastProperties = colorProperties['contrastRatio']
+    if (!contrastProperties)
+        return;
+    if (existingColorsEl) {
+        addStyleChangeEventListener(existingColorsEl,
+                                    contrastProperties['foregroundColor'],
+                                    contrastProperties['backgroundColor']);
+    }
+    var suggestedAAEl = document.querySelector('#suggested-colors-AA > .bevel-border');
+    var suggestedColors = contrastProperties['suggestedColors'];
+    if (!suggestedColors)
+        return;
+    console.log('suggestedAAEl', suggestedAAEl);
+    if (suggestedAAEl) {
+        addStyleChangeEventListener(suggestedAAEl,
+                                    suggestedColors['AA']['fg'],
+                                    suggestedColors['AA']['bg']);
+    }
+    var suggestedAAAEl = document.querySelector('#suggested-colors-AAA > .bevel-border');
+    console.log('suggestedAAAEl', suggestedAAAEl);
+    if (suggestedAAAEl) {
+        addStyleChangeEventListener(suggestedAAAEl,
+                                    suggestedColors['AAA']['fg'],
+                                    suggestedColors['AAA']['bg']);
+    }
+}
+
+function addStyleChangeEventListener(element, fgColor, bgColor) {
+    element.addEventListener('click', function() {
+        applyColors(fgColor, bgColor);
+    });
+}
+
+function applyColors(foreground, background) {
+    var changeColor = '(function() {\n'
+        + '$0.style.color = "' + foreground + '";\n'
+        + '$0.style.background = "' + background + '";\n'
+        + '})();';
+    console.log('changeColor', changeColor);
+    chrome.devtools.inspectedWindow.eval(
+        changeColor,
+        { useContentScriptContext: false });
 }
 
 function onSelectionChanged() {

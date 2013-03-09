@@ -102,6 +102,11 @@ span.info {
     font-style: italic;
 }
 
+span.suggestion {
+    font-style: italic;
+    font-size: 10px;
+}
+
 span.warning {
     font-style: italic;
     opacity: 0.5;
@@ -151,4 +156,5 @@ span.warning {
     overflow: hidden;
     font-size: 11px;
 }
+
 
