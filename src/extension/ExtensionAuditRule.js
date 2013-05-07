@@ -21,13 +21,7 @@ goog.provide('axs.ExtensionAuditRule');
 /**
  * @extends {axs.AuditRule}
  * @constructor
- * @param {Object} spec A spec of the form
- *     { name: string,
- *       severity: Severity,
- *       relevantNodesSelector: function(): Array.<node>|NodeList|XPathResult,
- *       test: function(node): boolean,
- *       code: string,
- *       opt_requiresConsoleAPI: boolean }.
+ * @param {axs.AuditRule.Spec} spec
  */
 axs.ExtensionAuditRule = function(spec) {
     axs.AuditRule.call(this, spec);

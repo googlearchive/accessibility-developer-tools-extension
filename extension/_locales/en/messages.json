@@ -37,6 +37,12 @@
             }
         }
     },
+    "audioWithoutControls_name": {
+        "message": "Audio elements should have controls."
+    },
+    "audioWithoutControls_url": {
+        "message": ""
+    },
     "badAriaAttributeValue_name": {
         "message": "ARIA state and property values must be valid."
     },
@@ -67,6 +73,12 @@
     "imagesWithoutAltText_url": {
         "message": "https://code.google.com/p/accessibility-developer-tools/wiki/AuditRules#AX_TEXT_02:_Images_should_have_an_alt_attribute,_unless_they_hav"
     },
+    "linkWithUnclearPurpose_name": {
+        "message": "The purpose of each link should be clear from the link text."
+    },
+    "linkWithUnclearPurpose_url": {
+        "message": ""
+    },
     "lowContrastElements_name": {
         "message": "Text elements should have a reasonable contrast ratio"
     },
@@ -78,6 +90,12 @@
     },
     "nonExistentAriaLabelledbyElement_url": {
         "message": "https://code.google.com/p/accessibility-developer-tools/wiki/AuditRules#AX_ARIA_02:__aria-labelledby_attributes_should_refer_to_an_eleme"
+    },
+    "pageWithoutTitle_name": {
+        "message": "Web pages have titles that describe topic or purpose."
+    },
+    "pageWithoutTitle_url": {
+        "message": ""
     },
     "requiredAriaAttributeMissing_name": {
         "message": "Elements with ARIA roles must have all required attributes for that role"
