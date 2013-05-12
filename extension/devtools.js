@@ -125,10 +125,14 @@ function handleResults(auditResults, auditRule, severity, results, isException) 
 
 function addResult(auditResults, auditRule, numResults, resultNodes) {
     var severity = chrome.i18n.getMessage('auditResult_' + auditRule.severity);
-    var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
+    ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
+    if (ruleName == '')
+        ruleName = auditRule.heading;
     var resultString = '[' + severity + '] ' + ruleName + ' (' + numResults + ')';
     var url = chrome.i18n.getMessage(auditRule.name + '_url');
-    if (url) {
+    if (url == '')
+        url = auditRule.url;
+    if (url && url != '') {
         var textNode1 = chrome.i18n.getMessage('auditUrl_before');
         var urlNode = auditResults.createURL(url, auditRule.code);
         var textNode2 = chrome.i18n.getMessage('auditUrl_after');
@@ -154,7 +158,10 @@ function finalizeAuditResults(auditResults) {
         var passedDetails = auditResults.createResult(chrome.i18n.getMessage('passingTestsTitle'));
         for (var i = 0; i < auditResults.passedRules.length; i++) {
             var auditRule = auditResults.passedRules[i];
-            passedDetails.addChild(chrome.i18n.getMessage(auditRule.name + '_name'));
+            var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
+            if (ruleName == '')
+                ruleName = auditRule.heading;
+            passedDetails.addChild(ruleName);
         }
         auditResults.addResult(chrome.i18n.getMessage('passingTestsSubtitle', [auditResults.passedRules.length]),
                                '',
@@ -165,7 +172,10 @@ function finalizeAuditResults(auditResults) {
         var notApplicableDetails = auditResults.createResult(chrome.i18n.getMessage('notApplicableTestsTitle'));
         for (var i = 0; i < auditResults.notApplicableRules.length; i++) {
             var auditRule = auditResults.notApplicableRules[i];
-            notApplicableDetails.addChild(chrome.i18n.getMessage(auditRule.name + '_name'));
+            var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
+            if (ruleName == '')
+                ruleName = auditRule.heading;
+            notApplicableDetails.addChild(ruleName);
         }
         auditResults.addResult(chrome.i18n.getMessage('notApplicableTestsSubtitle', [auditResults.notApplicableRules.length]),
                                '',
