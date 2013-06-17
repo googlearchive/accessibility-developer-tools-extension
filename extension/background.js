@@ -5,7 +5,7 @@ function injectContentScript(tabId, remaining_scripts, opt_callback) {
     console.log('injectContentScript', script);
     chrome.tabs.executeScript(
         tabId,
-        { file: script },
+        { file: script, allFrames: true },
         function() {
             if (chrome.extension.lastError) {
                 if (opt_callback)

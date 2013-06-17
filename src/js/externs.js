@@ -21,13 +21,6 @@ console.warn = function(vararg) { };
 /** @param {Element} element */
 var getEventListeners = function(element) { };
 
-var JSON = { };
-/**
- * @param {Object} o
- * @return {string}
- */
-JSON.stringify = function(o) { };
-
 var chrome = { };
 chrome.i18n = { };
 chrome.devtools = { };

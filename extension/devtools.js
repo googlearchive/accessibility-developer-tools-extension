@@ -23,34 +23,7 @@ function init(result) {
     var category = chrome.experimental.devtools.audits.addCategory(
         chrome.i18n.getMessage('auditTitle'), numAuditRules + 1);
 
-    category.onAuditStarted.addListener(function callback(auditResults) {
-        auditResults.numAuditRules = 0;
-        auditResults.resultsPending = 0;
-        auditResults.successfulResults = 0;
-        auditResults.callbacksPending = 0;
-        auditResults.passedRules = [];
-        auditResults.notApplicableRules = [];
-
-        for (var auditRuleName in axs.AuditRule.specs) {
-            var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
-            // TODO batch up results
-            if (!auditRule.disabled) {
-                console.log('running', auditRule);
-                var resultsCallback = handleResults.bind(null, auditResults, auditRule, auditRule.severity);
-                if (auditRule.requiresConsoleAPI) {
-                    auditRule.runInDevtools(resultsCallback);
-                } else {
-                    chrome.devtools.inspectedWindow.eval(
-                        'console.log("' + auditRuleName + '");\n' +
-                        'axs.ExtensionAuditRules.getRule("' + auditRuleName + '").run()',
-                        { useContentScriptContext: true },
-                        resultsCallback);
-                }
-                auditResults.numAuditRules += 1;
-                auditResults.resultsPending += 1;
-            }
-        }
-    });
+    category.onAuditStarted.addListener(auditRunCallback);
 
     chrome.devtools.panels.elements.createSidebarPane(
         chrome.i18n.getMessage('sidebarTitle'),
@@ -62,11 +35,53 @@ function init(result) {
     });
 }
 
+function auditRunCallback(auditResults) {
+    chrome.devtools.inspectedWindow.eval(
+        'axs.content.frameURIs',
+        { useContentScriptContext: true },
+        onURLsRetrieved.bind(null, auditResults));
+}
+
+function onURLsRetrieved(auditResults, urls) {
+    console.log("urls", urls, "keys", Object.keys(urls));
+    auditResults.numAuditRules = 0;
+    auditResults.resultsPending = 0;
+    auditResults.successfulResults = 0;
+    auditResults.callbacksPending = 0;
+    auditResults.passedRules = [];
+    auditResults.notApplicableRules = [];
+
+    for (var auditRuleName in axs.AuditRule.specs) {
+        var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
+        if (!auditRule.disabled) {
+            var urlValues = Object.keys(urls);
+            for (var i = 0; i < urlValues.length; i++) {
+                var frameURL = urlValues[i];
+                console.log('running', auditRule, 'in', frameURL);
+                var resultsCallback = handleResults.bind(null, auditResults, auditRule,
+                                                         auditRule.severity, frameURL);
+                if (auditRule.requiresConsoleAPI) {
+                    auditRule.runInDevtools(resultsCallback);
+                } else {
+                    chrome.devtools.inspectedWindow.eval(
+                        'console.log("' + auditRuleName + '");\n' +
+                        'axs.ExtensionAuditRules.getRule("' + auditRuleName + '").run()',
+                        { useContentScriptContext: true,
+                          frameURL: frameURL },
+                        resultsCallback);
+                }
+                auditResults.resultsPending += 1;
+            }
+            auditResults.numAuditRules += 1;
+        }
+    }
+}
+
 if (chrome.devtools.inspectedWindow.tabId)
     chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
                                    command: 'injectContentScripts' }, init);
 
-function handleResults(auditResults, auditRule, severity, results, isException) {
+function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {
     auditResults.resultsPending--;
     if (isException) {
         console.warn(auditRule.name, 'had an error: ', results);
@@ -95,7 +110,8 @@ function handleResults(auditResults, auditRule, severity, results, isException) 
             if (auditResults.createNode) {
                 resultNodes.push(
                     auditResults.createNode('axs.content.getResultNode("' + result + '")',
-                                            { useContentScriptContext: true }));
+                                            { useContentScriptContext: true,
+                                              frameURL: frameURL }));
             } else {
                 function addChild(auditResults, result) {
                     resultNodes.push(auditResults.createSnippet(result));
