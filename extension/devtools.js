@@ -19,7 +19,6 @@ function init(result) {
     }
 
     var numAuditRules = Object.keys(axs.AuditRule.specs).length;
-    console.log('audit rules: ', Object.keys(axs.AuditRule.specs));
     var category = chrome.experimental.devtools.audits.addCategory(
         chrome.i18n.getMessage('auditTitle'), numAuditRules + 1);
 
@@ -43,7 +42,6 @@ function auditRunCallback(auditResults) {
 }
 
 function onURLsRetrieved(auditResults, urls) {
-    console.log("urls", urls, "keys", Object.keys(urls));
     auditResults.numAuditRules = 0;
     auditResults.resultsPending = 0;
     auditResults.successfulResults = 0;
@@ -58,14 +56,12 @@ function onURLsRetrieved(auditResults, urls) {
             var urlValues = Object.keys(urls);
             for (var i = 0; i < urlValues.length; i++) {
                 var frameURL = urlValues[i];
-                console.log('running', auditRule, 'in', frameURL);
                 var resultsCallback = handleResults.bind(null, auditResults, auditRule,
                                                          auditRule.severity, frameURL);
                 if (auditRule.requiresConsoleAPI) {
                     auditRule.runInDevtools(resultsCallback);
                 } else {
                     chrome.devtools.inspectedWindow.eval(
-                        'console.log("' + auditRuleName + '");\n' +
                         'axs.ExtensionAuditRules.getRule("' + auditRuleName + '").run()',
                         { useContentScriptContext: true,
                           frameURL: frameURL },
@@ -172,27 +168,24 @@ function finalizeAuditResultsIfNothingPending(auditResults) {
 }
 
 function finalizeAuditResults(auditResults) {
-    console.log('auditResults', auditResults);
     var failedRules = Object.keys(auditResults.failedRules);
-    console.log('failedRules:', failedRules, auditResults.failedRules);
     for (var i = 0; i < failedRules.length; i++) {
-        var auditRule = failedRules[i];
-        delete auditResults.passedRules[auditRule.name];
-        delete auditResults.notApplicableRules[auditRule.name];
+        var auditRuleName = failedRules[i];
+        delete auditResults.passedRules[auditRuleName];
+        delete auditResults.notApplicableRules[auditRuleName];
     }
 
     var passedRules = Object.keys(auditResults.passedRules);
-    console.log('passedRules:', passedRules, auditResults.passedRules);
     if (passedRules.length > 0) {
         var passedDetails = auditResults.createResult(chrome.i18n.getMessage('passingTestsTitle'));
         for (var i = 0; i < passedRules.length; i++) {
             var auditRuleName = passedRules[i];
+            delete auditResults.notApplicableRules[auditRuleName];
             var ruleHeading = chrome.i18n.getMessage(auditRuleName + '_name');
             if (!ruleHeading || ruleHeading == '') {
                 var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
                 ruleHeading = auditRule.heading;
             }
-            console.log('ruleHeading', ruleHeading);
             passedDetails.addChild(ruleHeading);
         }
         auditResults.addResult(chrome.i18n.getMessage('passingTestsSubtitle', [passedRules.length]),
@@ -201,7 +194,6 @@ function finalizeAuditResults(auditResults) {
                                passedDetails);
     }
     var notApplicableRules = Object.keys(auditResults.notApplicableRules);
-    console.log('notApplicableRules:', notApplicableRules, auditResults.notApplicableRules);
     if (notApplicableRules.length > 0) {
         var notApplicableDetails = auditResults.createResult(chrome.i18n.getMessage('notApplicableTestsTitle'));
         for (var i = 0; i < notApplicableRules.length; i++) {
@@ -211,7 +203,6 @@ function finalizeAuditResults(auditResults) {
                 var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
                 ruleHeading = auditRule.heading;
             }
-            console.log('ruleHeading', ruleHeading);
             notApplicableDetails.addChild(ruleHeading);
         }
         auditResults.addResult(chrome.i18n.getMessage('notApplicableTestsSubtitle', [notApplicableRules.length]),
