@@ -48,8 +48,9 @@ function onURLsRetrieved(auditResults, urls) {
     auditResults.resultsPending = 0;
     auditResults.successfulResults = 0;
     auditResults.callbacksPending = 0;
-    auditResults.passedRules = [];
-    auditResults.notApplicableRules = [];
+    auditResults.passedRules = {};
+    auditResults.notApplicableRules = {};
+    auditResults.failedRules = {};
 
     for (var auditRuleName in axs.AuditRule.specs) {
         var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
@@ -100,10 +101,11 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
     auditResults.successfulResults++;
     var resultCallbacksPending = 0;
     if (results.result == axs.constants.AuditResult.PASS) {
-        auditResults.passedRules.push(auditRule);
+        auditResults.passedRules[auditRule.name] = true;
     } else if (results.result == axs.constants.AuditResult.NA ) {
-        auditResults.notApplicableRules.push(auditRule);
+        auditResults.notApplicableRules[auditRule.name] = true;
     } else {
+        auditResults.failedRules[auditRule.name] = true;
         var resultNodes = [];
         for (var i = 0; i < results.elements.length; ++i) {
             var result = results.elements[i];
@@ -170,30 +172,49 @@ function finalizeAuditResultsIfNothingPending(auditResults) {
 }
 
 function finalizeAuditResults(auditResults) {
-    if (auditResults.passedRules.length) {
+    console.log('auditResults', auditResults);
+    var failedRules = Object.keys(auditResults.failedRules);
+    console.log('failedRules:', failedRules, auditResults.failedRules);
+    for (var i = 0; i < failedRules.length; i++) {
+        var auditRule = failedRules[i];
+        delete auditResults.passedRules[auditRule.name];
+        delete auditResults.notApplicableRules[auditRule.name];
+    }
+
+    var passedRules = Object.keys(auditResults.passedRules);
+    console.log('passedRules:', passedRules, auditResults.passedRules);
+    if (passedRules.length > 0) {
         var passedDetails = auditResults.createResult(chrome.i18n.getMessage('passingTestsTitle'));
-        for (var i = 0; i < auditResults.passedRules.length; i++) {
-            var auditRule = auditResults.passedRules[i];
-            var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
-            if (ruleName == '')
-                ruleName = auditRule.heading;
-            passedDetails.addChild(ruleName);
+        for (var i = 0; i < passedRules.length; i++) {
+            var auditRuleName = passedRules[i];
+            var ruleHeading = chrome.i18n.getMessage(auditRuleName + '_name');
+            if (!ruleHeading || ruleHeading == '') {
+                var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
+                ruleHeading = auditRule.heading;
+            }
+            console.log('ruleHeading', ruleHeading);
+            passedDetails.addChild(ruleHeading);
         }
-        auditResults.addResult(chrome.i18n.getMessage('passingTestsSubtitle', [auditResults.passedRules.length]),
+        auditResults.addResult(chrome.i18n.getMessage('passingTestsSubtitle', [passedRules.length]),
                                '',
                                auditResults.Severity.Info,
                                passedDetails);
     }
-    if (auditResults.notApplicableRules.length) {
+    var notApplicableRules = Object.keys(auditResults.notApplicableRules);
+    console.log('notApplicableRules:', notApplicableRules, auditResults.notApplicableRules);
+    if (notApplicableRules.length > 0) {
         var notApplicableDetails = auditResults.createResult(chrome.i18n.getMessage('notApplicableTestsTitle'));
-        for (var i = 0; i < auditResults.notApplicableRules.length; i++) {
-            var auditRule = auditResults.notApplicableRules[i];
-            var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
-            if (ruleName == '')
-                ruleName = auditRule.heading;
-            notApplicableDetails.addChild(ruleName);
+        for (var i = 0; i < notApplicableRules.length; i++) {
+            var auditRuleName = notApplicableRules[i];
+            var ruleHeading = chrome.i18n.getMessage(auditRuleName + '_name');
+            if (!ruleHeading || ruleHeading == '') {
+                var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
+                ruleHeading = auditRule.heading;
+            }
+            console.log('ruleHeading', ruleHeading);
+            notApplicableDetails.addChild(ruleHeading);
         }
-        auditResults.addResult(chrome.i18n.getMessage('notApplicableTestsSubtitle', [auditResults.notApplicableRules.length]),
+        auditResults.addResult(chrome.i18n.getMessage('notApplicableTestsSubtitle', [notApplicableRules.length]),
                                '',
                                auditResults.Severity.Info,
                                notApplicableDetails);

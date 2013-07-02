@@ -26,12 +26,13 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
   --js $(ACCESSIBILITY_UTILS)/js/AuditRule.js \
   --js $(ACCESSIBILITY_UTILS)/js/AuditRules.js \
   $(AUDIT_RULES) \
---module extension:5:audits,properties \
+--module extension_properties:2:properties \
   --js ./src/extension/base.js \
+  --js ./src/extension/ExtensionProperties.js \
+--module extension_audits:3:audits,extension_properties \
   --js $(ACCESSIBILITY_UTILS)/js/ContentScriptFramework.js \
   --js ./src/extension/ExtensionAuditRule.js \
-  --js ./src/extension/ExtensionAuditRules.js \
-  --js ./src/extension/ExtensionProperties.js
+  --js ./src/extension/ExtensionAuditRules.js
 
 MODULES = axs constants utils content properties audits
 
