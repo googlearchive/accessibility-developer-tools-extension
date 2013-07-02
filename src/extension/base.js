@@ -45,7 +45,6 @@ goog.provide('base');
  * @param {Function} parentCtor Parent class.
  */
 base.inherits = function(childCtor, parentCtor) {
-  console.trace();
   /** @constructor */
   function tempCtor() {};
   tempCtor.prototype = parentCtor.prototype;

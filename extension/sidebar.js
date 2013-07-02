@@ -150,7 +150,6 @@ function applyColors(foreground, background) {
 }
 
 function gotBaseURI(result) {
-
     if (!result)
         return;
 
@@ -168,7 +167,7 @@ function onURLsRetrieved(result) {
     var urls = Object.keys(result);
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
-            'console.log("baseURI"); $0.baseURI;',
+            'console.log("baseURI", $0.baseURI); $0.baseURI;',
             { frameURL: urls[i] },
             gotBaseURI);
     }
@@ -179,7 +178,7 @@ function onSelectionChanged() {
         return;
     }
     chrome.devtools.inspectedWindow.eval(
-        'console.log("frameURIs"); axs.content.frameURIs;',
+        'console.log("frameURIs", axs.content.frameURIs); axs.content.frameURIs;',
         { useContentScriptContext: true },
         onURLsRetrieved);
 }
