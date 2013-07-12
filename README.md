@@ -14,4 +14,4 @@ limitations under the License.
 
 # Accessibility Developer Tools (extension)
 
-You can install the Accessibility Developer Tools extension from the [https://chrome.google.com/webstore/detail/accessibility-developer-t/fpkknkljclfencbdbgkenhalefipecmb?utm_source=chrome-ntp-icon](Chrome Web Store page).
+You can install the Accessibility Developer Tools extension from the [Chrome Web Store page](https://chrome.google.com/webstore/detail/accessibility-developer-t/fpkknkljclfencbdbgkenhalefipecmb?utm_source=chrome-ntp-icon).
