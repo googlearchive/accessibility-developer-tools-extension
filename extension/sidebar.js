@@ -18,6 +18,10 @@ function updateView(result) {
         result = {};
     }
     console.log('result', result);
+    if (typeof result != 'object') {
+        console.warn('non-object result:', result);
+        return;
+    }
 
     var main = document.getElementById('main');
     main.innerHTML = '';
@@ -38,6 +42,10 @@ function updateView(result) {
         } catch (ex) {
             console.error('Could not render results section', section, ex);
         }
+
+        if (sectionName == 'colorProperties' && 'contrastRatio' in section &&
+            'suggestedColors' in section['contrastRatio'])
+            insertStyleChangeEventListeners(section);
     }
 
     if (!foundProperty) {
@@ -70,11 +78,11 @@ function insertIdrefEventListeners() {
     for (var i = 0; i < elementsWithIdref.length; i++) {
         var element = elementsWithIdref[i];
         var idref = element.getAttribute('idref');
-        addEventListener(element, idref);
+        addIdRefEventListener(element, idref);
     }
 }
 
-function addEventListener(element, idref) {
+function addIdRefEventListener(element, idref) {
     element.addEventListener('click',
                              function() {
         chrome.devtools.inspectedWindow.eval(
