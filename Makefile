@@ -31,7 +31,7 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
   --js ./src/extension/base.js \
   --js ./src/extension/ExtensionProperties.js \
 --module extension_audits:3:audits,extension_properties \
-  --js $(ACCESSIBILITY_UTILS)/js/ContentScriptFramework.js \
+  --js ./src/extension/ContentScriptFramework.js \
   --js ./src/extension/ExtensionAuditRule.js \
   --js ./src/extension/ExtensionAuditRules.js
 
