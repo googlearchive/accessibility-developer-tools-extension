@@ -112,7 +112,6 @@ function addNodeIdEventListener(element, nodeId) {
 
 function insertStyleChangeEventListeners(colorProperties) {
     var existingColorsEl = document.querySelector('#contrast-ratio > .bevel-border');
-    console.log('existingColorsEl', existingColorsEl);
     var contrastProperties = colorProperties['contrastRatio']
     if (!contrastProperties)
         return;
@@ -125,14 +124,12 @@ function insertStyleChangeEventListeners(colorProperties) {
     var suggestedColors = contrastProperties['suggestedColors'];
     if (!suggestedColors)
         return;
-    console.log('suggestedAAEl', suggestedAAEl);
     if (suggestedAAEl) {
         addStyleChangeEventListener(suggestedAAEl,
                                     suggestedColors['AA']['fg'],
                                     suggestedColors['AA']['bg']);
     }
     var suggestedAAAEl = document.querySelector('#suggested-colors-AAA > .bevel-border');
-    console.log('suggestedAAAEl', suggestedAAAEl);
     if (suggestedAAAEl) {
         addStyleChangeEventListener(suggestedAAAEl,
                                     suggestedColors['AAA']['fg'],
@@ -150,8 +147,8 @@ function applyColors(foreground, background) {
     var changeColor = '(function() {\n'
         + '$0.style.color = "' + foreground + '";\n'
         + '$0.style.background = "' + background + '";\n'
+        + '$0.style.opacity = "1";\n'
         + '})();';
-    console.log('changeColor', changeColor);
     chrome.devtools.inspectedWindow.eval(
         changeColor,
         { useContentScriptContext: false });
@@ -162,20 +159,17 @@ function gotBaseURI(result) {
         return;
 
     chrome.devtools.inspectedWindow.eval(
-        'console.log("getAllProperties", $0); axs.extensionProperties.getAllProperties($0);',
+        'axs.extensionProperties.getAllProperties($0);',
         { useContentScriptContext: true,
           frameURL: result },
         updateView);
 }
 
 function onURLsRetrieved(result) {
-    chrome.devtools.inspectedWindow.eval(
-        'console.log("result: ' + result + '");',
-        { useContentScriptContext: false });
     var urls = Object.keys(result);
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
-            'console.log("baseURI", $0.baseURI); $0.baseURI;',
+            '$0.baseURI;',
             { frameURL: urls[i] },
             gotBaseURI);
     }
@@ -186,7 +180,7 @@ function onSelectionChanged() {
         return;
     }
     chrome.devtools.inspectedWindow.eval(
-        'console.log("frameURIs", axs.content.frameURIs); axs.content.frameURIs;',
+        'axs.content.frameURIs;',
         { useContentScriptContext: true },
         onURLsRetrieved);
 }
