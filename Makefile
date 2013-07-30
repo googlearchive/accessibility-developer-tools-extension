@@ -18,8 +18,9 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
   --js $(ACCESSIBILITY_UTILS)/js/axs.js \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \
---module utils:1:constants \
+--module utils:2:constants \
   --js $(ACCESSIBILITY_UTILS)/js/AccessibilityUtils.js \
+  --js $(ACCESSIBILITY_UTILS)/js/BrowserUtils.js \
 --module properties:1:utils,constants \
   --js $(ACCESSIBILITY_UTILS)/js/Properties.js \
 --module audits:$(NUM_AUDIT_RULE_SOURCES):constants,utils \
