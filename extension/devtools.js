@@ -19,38 +19,10 @@ function init(result) {
     }
 
     var numAuditRules = Object.keys(axs.AuditRule.specs).length;
-    console.log('audit rules: ', Object.keys(axs.AuditRule.specs));
     var category = chrome.experimental.devtools.audits.addCategory(
-        chrome.i18n.getMessage('auditTitle'), numAuditRules + 1);
+        chrome.i18n.getMessage('auditTitle'));
 
-    category.onAuditStarted.addListener(function callback(auditResults) {
-        auditResults.numAuditRules = 0;
-        auditResults.resultsPending = 0;
-        auditResults.successfulResults = 0;
-        auditResults.callbacksPending = 0;
-        auditResults.passedRules = [];
-        auditResults.notApplicableRules = [];
-
-        for (var auditRuleName in axs.AuditRule.specs) {
-            var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
-            // TODO batch up results
-            if (!auditRule.disabled) {
-                console.log('running', auditRule);
-                var resultsCallback = handleResults.bind(null, auditResults, auditRule, auditRule.severity);
-                if (auditRule.requiresConsoleAPI) {
-                    auditRule.runInDevtools(resultsCallback);
-                } else {
-                    chrome.devtools.inspectedWindow.eval(
-                        'console.log("' + auditRuleName + '");\n' +
-                        'axs.ExtensionAuditRules.getRule("' + auditRuleName + '").run()',
-                        { useContentScriptContext: true },
-                        resultsCallback);
-                }
-                auditResults.numAuditRules += 1;
-                auditResults.resultsPending += 1;
-            }
-        }
-    });
+    category.onAuditStarted.addListener(auditRunCallback);
 
     chrome.devtools.panels.elements.createSidebarPane(
         chrome.i18n.getMessage('sidebarTitle'),
@@ -59,14 +31,54 @@ function init(result) {
             sidebar.onShown.addListener(function(window) {
                 window.sidebar = sidebar;
             })
-    });
+        });
+}
+
+function auditRunCallback(auditResults) {
+    chrome.devtools.inspectedWindow.eval(
+        'axs.content.frameURIs',
+        { useContentScriptContext: true },
+        onURLsRetrieved.bind(null, auditResults));
+}
+
+function onURLsRetrieved(auditResults, urls) {
+    auditResults.numAuditRules = 0;
+    auditResults.resultsPending = 0;
+    auditResults.successfulResults = 0;
+    auditResults.callbacksPending = 0;
+    auditResults.passedRules = {};
+    auditResults.notApplicableRules = {};
+    auditResults.failedRules = {};
+
+    for (var auditRuleName in axs.AuditRule.specs) {
+        var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
+        if (!auditRule.disabled) {
+            var urlValues = Object.keys(urls);
+            for (var i = 0; i < urlValues.length; i++) {
+                var frameURL = urlValues[i];
+                var resultsCallback = handleResults.bind(null, auditResults, auditRule,
+                                                         auditRule.severity, frameURL);
+                if (auditRule.requiresConsoleAPI) {
+                    auditRule.runInDevtools(resultsCallback);
+                } else {
+                    chrome.devtools.inspectedWindow.eval(
+                        'axs.ExtensionAuditRules.getRule("' + auditRuleName + '").run()',
+                        { useContentScriptContext: true,
+                          frameURL: frameURL },
+                        resultsCallback);
+                }
+                auditResults.resultsPending += 1;
+            }
+            auditResults.numAuditRules += 1;
+        }
+    }
 }
 
 if (chrome.devtools.inspectedWindow.tabId)
     chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
                                    command: 'injectContentScripts' }, init);
 
-function handleResults(auditResults, auditRule, severity, results, isException) {
+function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {
     auditResults.resultsPending--;
     if (isException) {
         console.warn(auditRule.name, 'had an error: ', results);
@@ -85,28 +97,27 @@ function handleResults(auditResults, auditRule, severity, results, isException) 
     auditResults.successfulResults++;
     var resultCallbacksPending = 0;
     if (results.result == axs.constants.AuditResult.PASS) {
-        auditResults.passedRules.push(auditRule);
+        auditResults.passedRules[auditRule.name] = true;
     } else if (results.result == axs.constants.AuditResult.NA ) {
-        auditResults.notApplicableRules.push(auditRule);
+        auditResults.notApplicableRules[auditRule.name] = true;
     } else {
         var resultNodes = [];
+        if (!(auditRule.name in auditResults.failedRules))
+            auditResults.failedRules[auditRule.name] = resultNodes;
+        else
+            resultNodes = auditResults.failedRules[auditRule.name];
         for (var i = 0; i < results.elements.length; ++i) {
             var result = results.elements[i];
             if (auditResults.createNode) {
                 resultNodes.push(
                     auditResults.createNode('axs.content.getResultNode("' + result + '")',
-                                            { useContentScriptContext: true }));
+                                            { useContentScriptContext: true,
+                                              frameURL: frameURL }));
             } else {
                 function addChild(auditResults, result) {
                     resultNodes.push(auditResults.createSnippet(result));
                     auditResults.callbacksPending--;
                     resultCallbacksPending--;
-                    if (!resultCallbacksPending) {
-                        addResult(auditResults, auditRule, results.elements.length, resultNodes);
-                    }
-
-                    if (auditResults.resultsPending == 0 && !auditResults.callbacksPending)
-                        finalizeAuditResults(auditResults);
                 }
                 auditResults.callbacksPending++;
                 resultCallbacksPending++;
@@ -116,20 +127,19 @@ function handleResults(auditResults, auditRule, severity, results, isException) 
                     addChild.bind(null, auditResults));
             }
         }
-        if (!resultCallbacksPending)
-            addResult(auditResults, auditRule, results.elements.length, resultNodes);
     }
     if (auditResults.resultsPending == 0 && !auditResults.callbacksPending && !resultCallbacksPending)
         finalizeAuditResults(auditResults);
 }
 
-function addResult(auditResults, auditRule, numResults, resultNodes) {
+function addResult(auditResults, auditRuleName, resultNodes) {
+    var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
     var severity = chrome.i18n.getMessage('auditResult_' + auditRule.severity);
-    ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
+    ruleName = chrome.i18n.getMessage(auditRuleName + '_name');
     if (ruleName == '')
         ruleName = auditRule.heading;
-    var resultString = '[' + severity + '] ' + ruleName + ' (' + numResults + ')';
-    var url = chrome.i18n.getMessage(auditRule.name + '_url');
+    var resultString = '[' + severity + '] ' + ruleName + ' (' + resultNodes.length + ')';
+    var url = chrome.i18n.getMessage(auditRuleName + '_url');
     if (url == '')
         url = auditRule.url;
     if (url && url != '') {
@@ -154,30 +164,49 @@ function finalizeAuditResultsIfNothingPending(auditResults) {
 }
 
 function finalizeAuditResults(auditResults) {
-    if (auditResults.passedRules.length) {
+    for (var ruleName in auditResults.failedRules) {
+        var resultNodes = auditResults.failedRules[ruleName];
+        addResult(auditResults, ruleName, resultNodes);
+    }
+
+    var failedRules = Object.keys(auditResults.failedRules);
+    for (var i = 0; i < failedRules.length; i++) {
+        var auditRuleName = failedRules[i];
+        delete auditResults.passedRules[auditRuleName];
+        delete auditResults.notApplicableRules[auditRuleName];
+    }
+
+    var passedRules = Object.keys(auditResults.passedRules);
+    if (passedRules.length > 0) {
         var passedDetails = auditResults.createResult(chrome.i18n.getMessage('passingTestsTitle'));
-        for (var i = 0; i < auditResults.passedRules.length; i++) {
-            var auditRule = auditResults.passedRules[i];
-            var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
-            if (ruleName == '')
-                ruleName = auditRule.heading;
-            passedDetails.addChild(ruleName);
+        for (var i = 0; i < passedRules.length; i++) {
+            var auditRuleName = passedRules[i];
+            delete auditResults.notApplicableRules[auditRuleName];
+            var ruleHeading = chrome.i18n.getMessage(auditRuleName + '_name');
+            if (!ruleHeading || ruleHeading == '') {
+                var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
+                ruleHeading = auditRule.heading;
+            }
+            passedDetails.addChild(ruleHeading);
         }
-        auditResults.addResult(chrome.i18n.getMessage('passingTestsSubtitle', [auditResults.passedRules.length]),
+        auditResults.addResult(chrome.i18n.getMessage('passingTestsSubtitle', [passedRules.length]),
                                '',
                                auditResults.Severity.Info,
                                passedDetails);
     }
-    if (auditResults.notApplicableRules.length) {
+    var notApplicableRules = Object.keys(auditResults.notApplicableRules);
+    if (notApplicableRules.length > 0) {
         var notApplicableDetails = auditResults.createResult(chrome.i18n.getMessage('notApplicableTestsTitle'));
-        for (var i = 0; i < auditResults.notApplicableRules.length; i++) {
-            var auditRule = auditResults.notApplicableRules[i];
-            var ruleName = chrome.i18n.getMessage(auditRule.name + '_name');
-            if (ruleName == '')
-                ruleName = auditRule.heading;
-            notApplicableDetails.addChild(ruleName);
+        for (var i = 0; i < notApplicableRules.length; i++) {
+            var auditRuleName = notApplicableRules[i];
+            var ruleHeading = chrome.i18n.getMessage(auditRuleName + '_name');
+            if (!ruleHeading || ruleHeading == '') {
+                var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
+                ruleHeading = auditRule.heading;
+            }
+            notApplicableDetails.addChild(ruleHeading);
         }
-        auditResults.addResult(chrome.i18n.getMessage('notApplicableTestsSubtitle', [auditResults.notApplicableRules.length]),
+        auditResults.addResult(chrome.i18n.getMessage('notApplicableTestsSubtitle', [notApplicableRules.length]),
                                '',
                                auditResults.Severity.Info,
                                notApplicableDetails);

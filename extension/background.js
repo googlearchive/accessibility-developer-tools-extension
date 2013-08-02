@@ -5,7 +5,7 @@ function injectContentScript(tabId, remaining_scripts, opt_callback) {
     console.log('injectContentScript', script);
     chrome.tabs.executeScript(
         tabId,
-        { file: script },
+        { file: script, allFrames: true },
         function() {
             if (chrome.extension.lastError) {
                 if (opt_callback)
@@ -25,7 +25,8 @@ function injectContentScripts(tabId, opt_callback) {
                     'generated/utils.js',
                     'generated/properties.js',
                     'generated/audits.js',
-                    'generated/extension.js' ]
+                    'generated/extension_properties.js',
+                    'generated/extension_audits.js' ]
     injectContentScript(tabId, scripts, opt_callback);
 }
 

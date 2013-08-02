@@ -22,6 +22,7 @@ goog.provide('axs.extensionProperties');
  */
 axs.extensionProperties.getAllProperties = function(node) {
     var allProperties = axs.properties.getAllProperties(node);
+
     /**
      * @param {Object} tree
      * @return {Object}
