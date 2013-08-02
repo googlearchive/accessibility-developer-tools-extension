@@ -31,7 +31,7 @@ function init(result) {
             sidebar.onShown.addListener(function(window) {
                 window.sidebar = sidebar;
             })
-    });
+        });
 }
 
 function auditRunCallback(auditResults) {

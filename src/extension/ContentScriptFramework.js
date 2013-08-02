@@ -46,30 +46,38 @@ axs.content.getResultNode = function(nodeId) {
     return resultNode;
 };
 
+
+axs.content.removeHash = function(url) {
+    var a = document.createElement('a');
+    a.href = url;
+    return a.origin + a.pathname + a.search;
+}
+
 axs.content.frameURIs = {};
-axs.content.frameURIs[document.documentURI] = true;
+axs.content.frameURIs[axs.content.removeHash(document.documentURI)] = true;
 
 window.addEventListener('message',  function(e) {
     if (typeof e.data != 'object')
         return;
     if ('request' in e.data) {
-        if (e.data['request'] == 'getUri') {
+        switch (e.data['request']) {
+        case 'getUri':
             var origin = '*';
             if ('returnOrigin' in e.data)
                 origin = e.data['returnOrigin'];
-            e.source.postMessage({'request': 'postUri',
-                                  'uri': document.documentURI},
-                                 origin);
-        } else if (e.data['request'] == 'postUri') {
+            e.source.postMessage(
+                { 'request': 'postUri',
+                  'uri': axs.content.removeHash(document.documentURI) },
+                origin);
+            break;
+        case 'postUri':
             if (window.parent != window) {
                 window.parent.postMessage(e.data, '*')
             } else {
                 var uri = e.data['uri'];
-                if (uri.indexOf('#') >= 0)
-                    axs.content.frameURIs[uri.split('#', 1)[0]] = true;
-                else
-                    axs.content.frameURIs[uri] = true;
+                axs.content.frameURIs[uri] = true;
             }
+            break;
         }
     }
 }, false);

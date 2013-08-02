@@ -1,5 +1,5 @@
 {
-  "name": "__MSG_extName__ (Internal-only Chrome WebUI version)",
+  "name": "__MSG_extName__",
   "version": "2.1",
   "description": "Accessibility audit and element properties.",
   "default_locale": "en",
@@ -16,8 +16,7 @@
     "experimental",
     "tabs",
     "webNavigation",
-    "<all_urls>",
-    "chrome://*/*"
+    "<all_urls>"
   ],
   "web_accessible_resources": [
     "generated/axs.js",
