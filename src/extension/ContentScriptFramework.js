@@ -48,9 +48,9 @@ axs.content.getResultNode = function(nodeId) {
 
 
 axs.content.removeHash = function(url) {
-    var a = document.createElement('a');
+    var a = /** @type HTMLAnchorElement */ (document.createElement('a'));
     a.href = url;
-    return a.origin + a.pathname + a.search;
+    return a.protocol + "//" + a.host + a.pathname + a.search
 }
 
 axs.content.frameURIs = {};
