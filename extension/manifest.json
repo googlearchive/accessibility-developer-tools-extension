@@ -1,5 +1,5 @@
 {
-  "name": "__MSG_extName__",
+  "name": "Accessibility Developer Tools (Chrome WebUI)",
   "version": "2.1",
   "description": "Accessibility audit and element properties.",
   "default_locale": "en",
@@ -16,7 +16,8 @@
     "experimental",
     "tabs",
     "webNavigation",
-    "<all_urls>"
+    "<all_urls>",
+    "chrome://*/*"
   ],
   "web_accessible_resources": [
     "generated/axs.js",

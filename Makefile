@@ -3,6 +3,7 @@ AUDIT_RULES = $(shell find $(ACCESSIBILITY_UTILS)/audits -name "*.js" | sed -e "
 NUM_AUDIT_RULES = $(shell echo `find ./lib/accessibility-developer-tools/src/audits -name "*.js" | wc -l`)
 NUM_AUDIT_RULE_SOURCES = `expr $(NUM_AUDIT_RULES) + 2`
 EXTERNS = ./src/js/externs.js
+LIB_EXTERNS = $(ACCESSIBILITY_UTILS)/js/externs/externs.js
 
 GENERATED_JS_FILES_DIR = ./extension/generated
 TEMPLATES_LIB_FILE = ./extension/Handlebar.js
@@ -13,7 +14,7 @@ TEST_DEPENDENCIES_REL_DIR = generated
 CLOSURE_JAR = ~/src/closure/compiler.jar
 EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --formatting PRETTY_PRINT --summary_detail_level 3 --compilation_level SIMPLE_OPTIMIZATIONS \
---warning_level VERBOSE --externs $(EXTERNS) \
+--warning_level VERBOSE --externs $(EXTERNS) --externs $(LIB_EXTERNS) \
 --module axs:1 \
   --js $(ACCESSIBILITY_UTILS)/js/axs.js \
 --module constants:1:axs \
