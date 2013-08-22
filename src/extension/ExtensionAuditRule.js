@@ -32,37 +32,40 @@ axs.ExtensionAuditRule = function(spec) {
 base.inherits(axs.ExtensionAuditRule, axs.AuditRule);
 
 /**
- * Add the given node to the given array. This is to abstract calls to
+ * Add the given element to the given array. This is to abstract calls to
  * convertNodeToResult() away from the main code.
- * @param {Array.<Node>} nodes
- * @param {Node} node
+ * @param {Array.<Element>} elements
+ * @param {Element} element
  */
-axs.ExtensionAuditRule.prototype.addNode = function(nodes, node) {
-    nodes.push(axs.content.convertNodeToResult(node));
+axs.ExtensionAuditRule.prototype.addElement = function(elements, element) {
+    elements.push(axs.content.convertNodeToResult(element));
 };
 
 axs.ExtensionAuditRule.prototype.runInDevtools = function(resultsCallback) {
     var extensionId = chrome.i18n.getMessage("@@extension_id"); // yes, really.
     var uniqueEventName = extensionId + '-' + this.name;
 
-    function addEventListener(uniqueEventName, test) {
+    function addEventListener(uniqueEventName, test, addElement) {
         function handleEventListenersEvent(event) {
             var element = event.target;
             window.relevantNodes.push(element);
             if (test(element))
-                this.addNode(window.failingNodes, element);
+                addElement(window.failingNodes, element, true);
         }
         window.relevantNodes = [];
         window.failingNodes = [];
         document.addEventListener(uniqueEventName, handleEventListenersEvent, false);
     }
-    chrome.devtools.inspectedWindow.eval('(' + addEventListener + ')("'+ uniqueEventName + '", ' + this.test_ + ')',
+    chrome.devtools.inspectedWindow.eval('(' + addEventListener + ')("'+
+                                         uniqueEventName + '", ' + this.test_ +
+                                         ', ' + this.addElement  + ')',
                                          { useContentScriptContext: true });
 
-    function sendRelevantNodesToContentScript(relevantNodesSelector, eventName) {
-        var relevantNodes = relevantNodesSelector(document);
-        for (var i = 0; i < relevantNodes.length; i++) {
-            var node = relevantNodes[i];
+    function sendRelevantNodesToContentScript(matcher, eventName) {
+        var relevantElements = [];
+        axs.AuditRule.collectMatchingElements(document, matcher, relevantElements);
+        for (var i = 0; i < relevantElements.length; i++) {
+            var node = relevantElements[i];
             var event = document.createEvent('Event');
             event.initEvent(eventName, true, false);
             node.dispatchEvent(event);
@@ -74,9 +77,11 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(resultsCallback) {
         'axs.utils.isElementHidden = ' + axs.utils.isElementHidden + ';\n' +
         'axs.utils.isElementOrAncestorHidden = ' + axs.utils.isElementOrAncestorHidden + ';\n' +
         'axs.utils.isElementImplicitlyFocusable = ' + axs.utils.isElementImplicitlyFocusable + ';\n' +
-        'var relevantNodesSelector = ' + this.relevantNodesSelector_ + ';\n' +
+        'axs.AuditRule = {};\n' +
+        'axs.AuditRule.collectMatchingElements = ' + axs.AuditRule.collectMatchingElements + ';\n' +
+        'var relevantElementMatcher = ' + this.relevantElementMatcher_ + ';\n' +
         'var sendRelevantNodesToContentScript = ' + sendRelevantNodesToContentScript + ';\n' +
-        'sendRelevantNodesToContentScript(relevantNodesSelector, "' +
+        'sendRelevantNodesToContentScript(relevantElementMatcher, "' +
         uniqueEventName + '"); })()';
     chrome.devtools.inspectedWindow.eval(stringToEval);
 
