@@ -17,7 +17,6 @@ function updateView(result) {
         console.warn('no result');
         result = {};
     }
-    console.log('result', result);
     if (typeof result != 'object') {
         console.warn('non-object result:', result);
         return;
@@ -151,7 +150,7 @@ function applyColors(foreground, background) {
         + '})();';
     chrome.devtools.inspectedWindow.eval(
         changeColor,
-        { useContentScriptContext: false });
+        { useContentScriptContext: true });
 }
 
 function gotBaseURI(result) {
@@ -170,7 +169,8 @@ function onURLsRetrieved(result) {
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
             '$0.baseURI;',
-            { frameURL: urls[i] },
+            { frameURL: urls[i],
+              useContentScriptContext: true },
             gotBaseURI);
     }
 }

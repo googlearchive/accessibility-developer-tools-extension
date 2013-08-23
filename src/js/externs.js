@@ -12,15 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var console = { };
-/** @param {...*} vararg */
-console.log = function(vararg) { };
-/** @param {...*} vararg */
-console.warn = function(vararg) { };
-
-/** @param {Element} element */
-var getEventListeners = function(element) { };
-
 var chrome = { };
 chrome.i18n = { };
 chrome.devtools = { };
@@ -38,7 +29,3 @@ chrome.devtools.inspectedWindow.eval = function(string, opt_options, opt_callbac
  */
 chrome.i18n.getMessage = function(id, var_args) { };
 
-/**
- * @type {Element}
- */
-HTMLLabelElement.prototype.control;

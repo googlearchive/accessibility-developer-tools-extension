@@ -83,11 +83,6 @@ window.addEventListener('message',  function(e) {
 }, false);
 
 (function() {
-function getOrigin(url) {
-    var urlParts = url.split('://', 2);
-    urlParts[1] = urlParts[1].split('/')[0];
-    return urlParts.join('://');
-}
 
 var iframes = document.querySelectorAll('iframe');
 for (var i = 0; i < iframes.length; i++) {
@@ -95,8 +90,8 @@ for (var i = 0; i < iframes.length; i++) {
     var frameOrigin = '*';
     var src = iframe.src;
     if (src && src.length > 0)
-        frameOrigin = getOrigin(src);
-    var docOrigin = getOrigin(document.documentURI);
+        frameOrigin = axs.content.removeHash(src);
+    var docOrigin = axs.content.removeHash(document.documentURI);
     try {
         iframe.contentWindow.postMessage({'request': 'getUri' ,
                                           'returnOrigin': docOrigin}, frameOrigin);
