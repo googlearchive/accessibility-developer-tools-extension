@@ -12,10 +12,12 @@
     ]
   },
   "devtools_page": "devtools.html",
+  "options_page": "options.html",
   "permissions": [
     "experimental",
     "tabs",
     "webNavigation",
+    "storage",
     "<all_urls>"
   ],
   "web_accessible_resources": [

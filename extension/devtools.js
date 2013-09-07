@@ -22,7 +22,7 @@ function init(result) {
     var category = chrome.experimental.devtools.audits.addCategory(
         chrome.i18n.getMessage('auditTitle'));
 
-    category.onAuditStarted.addListener(auditRunCallback);
+    category.onAuditStarted.addListener(getAuditPrefs);
 
     chrome.devtools.panels.elements.createSidebarPane(
         chrome.i18n.getMessage('sidebarTitle'),
@@ -34,14 +34,23 @@ function init(result) {
         });
 }
 
-function auditRunCallback(auditResults) {
+function getAuditPrefs(auditResults) {
+    chrome.storage.sync.get('auditRules',
+                            auditRunCallback.bind(null, auditResults));
+}
+
+function auditRunCallback(auditResults, items) {
+    if ('auditRules' in items)
+        var prefs = items['auditRules'];
+    else
+        var prefs = {};
     chrome.devtools.inspectedWindow.eval(
         'axs.content.frameURIs',
         { useContentScriptContext: true },
-        onURLsRetrieved.bind(null, auditResults));
+        onURLsRetrieved.bind(null, auditResults, prefs));
 }
 
-function onURLsRetrieved(auditResults, urls) {
+function onURLsRetrieved(auditResults, prefs, urls) {
     auditResults.numAuditRules = 0;
     auditResults.resultsPending = 0;
     auditResults.successfulResults = 0;
@@ -49,10 +58,12 @@ function onURLsRetrieved(auditResults, urls) {
     auditResults.passedRules = {};
     auditResults.notApplicableRules = {};
     auditResults.failedRules = {};
-
     for (var auditRuleName in axs.AuditRule.specs) {
+        // Run rules by default, fill in prefs for previously unseen rules
+        if (!(auditRuleName in prefs))
+            prefs[auditRuleName] = true;
         var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
-        if (!auditRule.disabled) {
+        if (!auditRule.disabled && prefs[auditRuleName]) {
             var urlValues = Object.keys(urls);
             for (var i = 0; i < urlValues.length; i++) {
                 var frameURL = urlValues[i];
@@ -72,6 +83,8 @@ function onURLsRetrieved(auditResults, urls) {
             auditResults.numAuditRules += 1;
         }
     }
+    // Write filled in prefs back to storage
+    chrome.storage.sync.set({'auditRules': prefs});
 }
 
 if (chrome.devtools.inspectedWindow.tabId)

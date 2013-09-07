@@ -1,7 +1,7 @@
 ACCESSIBILITY_UTILS = ./lib/accessibility-developer-tools/src
 AUDIT_RULES = $(shell find $(ACCESSIBILITY_UTILS)/audits -name "*.js" | sed -e "s/^/--js /g")
 NUM_AUDIT_RULES = $(shell echo `find ./lib/accessibility-developer-tools/src/audits -name "*.js" | wc -l`)
-NUM_AUDIT_RULE_SOURCES = `expr $(NUM_AUDIT_RULES) + 2`
+NUM_AUDIT_RULE_SOURCES = `expr $(NUM_AUDIT_RULES) + 4`
 EXTERNS = ./src/js/externs.js
 LIB_EXTERNS = $(ACCESSIBILITY_UTILS)/js/externs/externs.js
 
@@ -15,7 +15,8 @@ CLOSURE_JAR = ~/src/closure/compiler.jar
 EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --formatting PRETTY_PRINT --summary_detail_level 3 --compilation_level SIMPLE_OPTIMIZATIONS \
 --warning_level VERBOSE --externs $(EXTERNS) --externs $(LIB_EXTERNS) \
---module axs:1 \
+--module axs:2 \
+  --js ./lib/accessibility-developer-tools/lib/closure-library/closure/goog/base.js \
   --js $(ACCESSIBILITY_UTILS)/js/axs.js \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \
@@ -25,14 +26,15 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --module properties:1:utils,constants \
   --js $(ACCESSIBILITY_UTILS)/js/Properties.js \
 --module audits:$(NUM_AUDIT_RULE_SOURCES):constants,utils \
+  --js $(ACCESSIBILITY_UTILS)/js/AuditResults.js \
+  --js $(ACCESSIBILITY_UTILS)/js/Audit.js \
   --js $(ACCESSIBILITY_UTILS)/js/AuditRule.js \
   --js $(ACCESSIBILITY_UTILS)/js/AuditRules.js \
   $(AUDIT_RULES) \
 --module extension_properties:2:properties \
-  --js ./src/extension/base.js \
-  --js ./src/extension/ExtensionProperties.js \
---module extension_audits:3:audits,extension_properties \
   --js ./src/extension/ContentScriptFramework.js \
+  --js ./src/extension/ExtensionProperties.js \
+--module extension_audits:2:audits,extension_properties \
   --js ./src/extension/ExtensionAuditRule.js \
   --js ./src/extension/ExtensionAuditRules.js
 
@@ -43,7 +45,7 @@ MODULES = axs constants utils content properties audits
 js: clean
 	@echo "\nStand back! I'm rebuilding!\n---------------------------"
 	@/bin/echo -n "* Rebuilding generated JS modules: "
-	@/bin/echo -n $(EXTENSION_CLOSURE_COMMAND)
+	@/bin/echo -n "$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(GENERATED_JS_FILES_DIR)/"
 	@/bin/echo
 	@$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(GENERATED_JS_FILES_DIR)/ && \
     echo "SUCCESS"

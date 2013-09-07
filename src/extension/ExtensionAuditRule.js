@@ -13,7 +13,6 @@
 // limitations under the License.
 
 goog.require('axs.AuditRule');
-goog.require('base');
 
 goog.provide('axs.ExtensionAuditRule');
 
@@ -29,7 +28,7 @@ axs.ExtensionAuditRule = function(spec) {
     /** @type {boolean} */
     this.requiresConsoleAPI = !!spec['opt_requiresConsoleAPI'];
 };
-base.inherits(axs.ExtensionAuditRule, axs.AuditRule);
+goog.inherits(axs.ExtensionAuditRule, axs.AuditRule);
 
 /**
  * Add the given element to the given array. This is to abstract calls to
