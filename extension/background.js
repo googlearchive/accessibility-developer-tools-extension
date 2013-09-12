@@ -32,15 +32,22 @@ function injectContentScripts(tabId, opt_callback) {
 
 chrome.extension.onRequest.addListener(
     function(request, sender, callback) {
-        var tabId = request.tabId;
-        injectContentScripts(tabId, callback);
-        if (inspectedTabs.indexOf(tabId) == -1) {
-            chrome.webNavigation.onCommitted.addListener(
-                function(details) {
-                    if (details.tabId == tabId && details.frameId == 0) {
-                        injectContentScripts(tabId);
-                    }
-                });
+        switch(request.command) {
+        case 'injectContentScripts':
+            var tabId = request.tabId;
+            injectContentScripts(tabId, callback);
+            if (inspectedTabs.indexOf(tabId) == -1) {
+                chrome.webNavigation.onCommitted.addListener(
+                    function(details) {
+                        if (details.tabId == tabId && details.frameId == 0) {
+                            injectContentScripts(tabId);
+                        }
+                    });
+            }
             inspectedTabs.push(tabId);
+            return;
+        case 'getAuditPrefs':
+            chrome.storage.sync.get('auditRules', callback);
+            return;
         }
 });
