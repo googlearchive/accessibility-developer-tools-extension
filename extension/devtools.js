@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+if (chrome.devtools.inspectedWindow.tabId)
+    chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
+                                   command: 'injectContentScripts' }, init);
+
 function init(result) {
     if (result && 'error' in result) {
         console.warn('Could not initialise extension:' + result.error);
@@ -35,8 +39,9 @@ function init(result) {
 }
 
 function getAuditPrefs(auditResults) {
-    chrome.storage.sync.get('auditRules',
-                            auditRunCallback.bind(null, auditResults));
+    chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
+                                   command: 'getAuditPrefs' },
+                                 auditRunCallback.bind(null, auditResults));
 }
 
 function auditRunCallback(auditResults, items) {
@@ -86,10 +91,6 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     // Write filled in prefs back to storage
     chrome.storage.sync.set({'auditRules': prefs});
 }
-
-if (chrome.devtools.inspectedWindow.tabId)
-    chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
-                                   command: 'injectContentScripts' }, init);
 
 function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {
     auditResults.resultsPending--;
