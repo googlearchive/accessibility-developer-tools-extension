@@ -26,7 +26,7 @@ function injectContentScripts(tabId, opt_callback) {
                     'generated/properties.js',
                     'generated/audits.js',
                     'generated/extension_properties.js',
-                    'generated/extension_audits.js' ]
+                    'generated/extension_audits.js' ];
     injectContentScript(tabId, scripts, opt_callback);
 }
 

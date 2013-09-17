@@ -31,6 +31,7 @@ function updateView(result) {
         if (!section)
             continue;
 
+        resolveI18nMessages(section);
         try {
             var template = new Handlebar(getTemplate(sectionName));
             template.render(section,
@@ -54,6 +55,27 @@ function updateView(result) {
     insertMessages();
     insertIdrefEventListeners();
     updateHeight();
+}
+
+// walk object and replace anything with messageKey/args with chrome.i18n.getMessage()
+function resolveI18nMessages(object) {
+    for (var key in object) {
+        var child = object[key];
+        if (child == null || typeof child != "object")
+            continue;
+        if ('messageKey' in child) {
+            if ('args' in child) {
+                var args = child['args'];
+                args.unshift(child['messageKey']);
+                var message = chrome.i18n.getMessage.apply(null, args)
+                object[key] = message;
+            } else {
+                object[key] = chrome.i18n.getMessage(child['messageKey']);
+            }
+        } else {
+            resolveI18nMessages(child);
+        }
+    }
 }
 
 function getTemplate(template) {
