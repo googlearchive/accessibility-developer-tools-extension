@@ -1,6 +1,6 @@
 {
   "name": "__MSG_extName__",
-  "version": "2.6",
+  "version": "2.8.2",
   "description": "Accessibility audit and element properties.",
   "default_locale": "en",
   "icons": {
