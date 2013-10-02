@@ -13,6 +13,7 @@
 // limitations under the License.
 
 goog.provide('axs.content');
+goog.require('axs.utils');
 
 if (!axs.content.auditResultNodes) {
     /**
@@ -87,6 +88,8 @@ window.addEventListener('message',  function(e) {
 var iframes = document.querySelectorAll('iframe');
 for (var i = 0; i < iframes.length; i++) {
     var iframe = iframes[i];
+    if (axs.utils.isElementOrAncestorHidden(iframe))
+        continue;
     var frameOrigin = '*';
     var src = iframe.src;
     if (src && src.length > 0)
