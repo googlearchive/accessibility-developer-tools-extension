@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-if (chrome.devtools.inspectedWindow.tabId)
+if (chrome.devtools.inspectedWindow.tabId) {
     chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
                                    command: 'injectContentScripts' }, init);
+}
 
 function init(result) {
     if (result && 'error' in result) {
@@ -63,6 +64,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     auditResults.passedRules = {};
     auditResults.notApplicableRules = {};
     auditResults.failedRules = {};
+    var maxResults = 100;  // TODO(alice): pref for maxResults
     for (var auditRuleName in axs.AuditRule.specs) {
         // Run rules by default, fill in prefs for previously unseen rules
         if (!(auditRuleName in prefs))
@@ -73,12 +75,17 @@ function onURLsRetrieved(auditResults, prefs, urls) {
             for (var i = 0; i < urlValues.length; i++) {
                 var frameURL = urlValues[i];
                 var resultsCallback = handleResults.bind(null, auditResults, auditRule,
-                                                         auditRule.severity, frameURL);
+                                                         auditRule.severity, frameURL,
+                                                         maxResults);
+                var auditOptions = { 'maxResults': maxResults };
                 if (auditRule.requiresConsoleAPI) {
-                    auditRule.runInDevtools(resultsCallback);
+                    auditRule.runInDevtools(auditOptions, resultsCallback);
                 } else {
+                    var stringToEval =
+                        'var rule = axs.ExtensionAuditRules.getRule("' + auditRuleName + '");\n' +
+                        'rule.run(' + JSON.stringify(auditOptions) + ');';
                     chrome.devtools.inspectedWindow.eval(
-                        'axs.ExtensionAuditRules.getRule("' + auditRuleName + '").run()',
+                        stringToEval,
                         { useContentScriptContext: true,
                           frameURL: frameURL },
                         resultsCallback);
@@ -92,7 +99,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     chrome.storage.sync.set({'auditRules': prefs});
 }
 
-function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {
+function handleResults(auditResults, auditRule, severity, frameURL, maxResults, results, isException) {
     auditResults.resultsPending--;
     if (isException) {
         console.warn(auditRule.name, 'had an error: ', results);
@@ -122,14 +129,17 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
             resultNodes = auditResults.failedRules[auditRule.name];
         for (var i = 0; i < results.elements.length; ++i) {
             var result = results.elements[i];
-            if (auditResults.createNode) {
-                resultNodes.push(
-                    auditResults.createNode('axs.content.getResultNode("' + result + '")',
-                                            { useContentScriptContext: true,
-                                              frameURL: frameURL }));
+             if (auditResults.createNode) {
+                if (resultNodes.length < maxResults) {
+                    resultNodes.push(
+                        auditResults.createNode('axs.content.getResultNode("' + result + '")',
+                                                { useContentScriptContext: true,
+                                                  frameURL: frameURL }));
+                }
             } else {
                 function addChild(auditResults, result) {
-                    resultNodes.push(auditResults.createSnippet(result));
+                    if (resultNodes.length < maxResults)
+                        resultNodes.push(auditResults.createSnippet(result));
                     auditResults.callbacksPending--;
                     resultCallbacksPending--;
                 }

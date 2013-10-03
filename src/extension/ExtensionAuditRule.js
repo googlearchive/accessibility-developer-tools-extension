@@ -40,24 +40,43 @@ axs.ExtensionAuditRule.prototype.addElement = function(elements, element) {
     elements.push(axs.content.convertNodeToResult(element));
 };
 
-axs.ExtensionAuditRule.prototype.runInDevtools = function(resultsCallback) {
-    var extensionId = chrome.i18n.getMessage("@@extension_id"); // yes, really.
+/**
+ * @param {Object} options
+ *     Optional named parameters:
+ *     ignoreSelectors: Selectors for parts of the page to ignore for this rule.
+ *     scope: The scope in which the element selector should run.
+ *         Defaults to `document`.
+ *     maxResults: The maximum number of results to collect. If more than this
+ *         number of results is found, 'resultsTruncated' is set to true in the
+ *         returned object. If this is null or undefined, all results will be
+ *         returned.
+ * @param {function()} resultsCallback Will be called with results in the form
+ *     {?Object.<string, (axs.constants.AuditResult|?Array.<Element>|boolean)>}
+ */
+axs.ExtensionAuditRule.prototype.runInDevtools = function(options, resultsCallback) {
+    var extensionId = chrome.runtime.id;
     var uniqueEventName = extensionId + '-' + this.name;
-
-    function addEventListener(uniqueEventName, test, addElement) {
-        function handleEventListenersEvent(event) {
+    options = options || {};
+    var maxResults = 'maxResults' in options ? options.maxResults : null;
+    function addEventListener(uniqueEventName, test, addElement, maxResults) {
+        function testElement(event) {
+            if (maxResults && window.relevantNodes &&
+                window.relevantNodes.length >= maxResults) {
+                window.resultsTruncated = true;
+                return;
+            }
             var element = event.target;
             window.relevantNodes.push(element);
             if (test(element))
-                addElement(window.failingNodes, element, true);
+                addElement(window.failingNodes, element);
         }
         window.relevantNodes = [];
         window.failingNodes = [];
-        document.addEventListener(uniqueEventName, handleEventListenersEvent, false);
+        document.addEventListener(uniqueEventName, testElement, false);
     }
     chrome.devtools.inspectedWindow.eval('(' + addEventListener + ')("'+
                                          uniqueEventName + '", ' + this.test_ +
-                                         ', ' + this.addElement  + ')',
+                                         ', ' + this.addElement  + ', ' + maxResults + ')',
                                          { useContentScriptContext: true });
 
     function sendRelevantNodesToContentScript(matcher, eventName) {
@@ -88,8 +107,17 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(resultsCallback) {
         var result = axs.constants.AuditResult.NA;
         if (window.relevantNodes.length)
             result = window.failingNodes.length ? axs.constants.AuditResult.FAIL : axs.constants.AuditResult.PASS;
+        window.relevantNodes.length = 0;
 
-        return { result: result, elements: window.failingNodes };
+        var failingNodes = window.failingNodes.slice(0);
+        window.failingNodes.length = 0;
+
+        var results = { result: result, elements: failingNodes };
+        if (window.truncatedResults)
+            results.truncatedResults = true;
+        delete window.truncatedResults;
+
+        return results;
     }
     chrome.devtools.inspectedWindow.eval('(' + retrieveResults + ')()',
                                          { useContentScriptContext: true },
