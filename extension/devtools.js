@@ -64,7 +64,8 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     auditResults.passedRules = {};
     auditResults.notApplicableRules = {};
     auditResults.failedRules = {};
-    var maxResults = 100;  // TODO(alice): pref for maxResults
+    auditResults.truncatedRules = {}
+    auditResults.maxResults = 100;  // TODO(alice): pref for maxResults
     for (var auditRuleName in axs.AuditRule.specs) {
         // Run rules by default, fill in prefs for previously unseen rules
         if (!(auditRuleName in prefs))
@@ -75,9 +76,8 @@ function onURLsRetrieved(auditResults, prefs, urls) {
             for (var i = 0; i < urlValues.length; i++) {
                 var frameURL = urlValues[i];
                 var resultsCallback = handleResults.bind(null, auditResults, auditRule,
-                                                         auditRule.severity, frameURL,
-                                                         maxResults);
-                var auditOptions = { 'maxResults': maxResults };
+                                                         auditRule.severity, frameURL);
+                var auditOptions = { 'maxResults': auditResults.maxResults };
                 if (auditRule.requiresConsoleAPI) {
                     auditRule.runInDevtools(auditOptions, resultsCallback);
                 } else {
@@ -99,7 +99,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     chrome.storage.sync.set({'auditRules': prefs});
 }
 
-function handleResults(auditResults, auditRule, severity, frameURL, maxResults, results, isException) {
+function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {
     auditResults.resultsPending--;
     if (isException) {
         console.warn(auditRule.name, 'had an error: ', results);
@@ -127,19 +127,27 @@ function handleResults(auditResults, auditRule, severity, frameURL, maxResults, 
             auditResults.failedRules[auditRule.name] = resultNodes;
         else
             resultNodes = auditResults.failedRules[auditRule.name];
+
+        if (results.resultsTruncated)
+            auditResult.truncatedRules[auditRule.name] = true;
+
         for (var i = 0; i < results.elements.length; ++i) {
             var result = results.elements[i];
-             if (auditResults.createNode) {
-                if (resultNodes.length < maxResults) {
+            if (auditResults.createNode) {
+                if (resultNodes.length < auditResults.maxResults) {
                     resultNodes.push(
                         auditResults.createNode('axs.content.getResultNode("' + result + '")',
                                                 { useContentScriptContext: true,
                                                   frameURL: frameURL }));
+                } else {
+                    auditResults.truncatedRules[auditRule.name] = true;
                 }
             } else {
                 function addChild(auditResults, result) {
-                    if (resultNodes.length < maxResults)
+                    if (resultNodes.length < auditResults.maxResults)
                         resultNodes.push(auditResults.createSnippet(result));
+                    else
+                        auditResults.truncatedRules[auditRule.name] = true;
                     auditResults.callbacksPending--;
                     resultCallbacksPending--;
                 }
@@ -156,13 +164,18 @@ function handleResults(auditResults, auditRule, severity, frameURL, maxResults, 
         finalizeAuditResults(auditResults);
 }
 
-function addResult(auditResults, auditRuleName, resultNodes) {
+function addResult(auditResults, auditRuleName, resultNodes, truncated) {
     var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
     var severity = chrome.i18n.getMessage('auditResult_' + auditRule.severity);
     ruleName = chrome.i18n.getMessage(auditRuleName + '_name');
     if (ruleName == '')
         ruleName = auditRule.heading;
-    var resultString = '[' + severity + '] ' + ruleName + ' (' + resultNodes.length + ')';
+    var resultString = '[' + severity + '] ' + ruleName + ' (' + resultNodes.length +
+       (truncated ? '+' : '') + ')';
+    if (truncated) {
+        var truncatedMessage = chrome.i18n.getMessage('truncatedResults', [auditResults.maxResults]);
+        resultNodes.unshift(truncatedMessage);
+    }
     var url = chrome.i18n.getMessage(auditRuleName + '_url');
     if (url == '')
         url = auditRule.url;
@@ -170,6 +183,8 @@ function addResult(auditResults, auditRuleName, resultNodes) {
         var textNode1 = chrome.i18n.getMessage('auditUrl_before');
         var urlNode = auditResults.createURL(url, auditRule.code);
         var textNode2 = chrome.i18n.getMessage('auditUrl_after');
+        if (truncated)
+            resultNodes.unshift(' ');
         resultNodes.unshift(textNode2);
         resultNodes.unshift(urlNode);
         resultNodes.unshift(textNode1);
@@ -190,7 +205,8 @@ function finalizeAuditResultsIfNothingPending(auditResults) {
 function finalizeAuditResults(auditResults) {
     for (var ruleName in auditResults.failedRules) {
         var resultNodes = auditResults.failedRules[ruleName];
-        addResult(auditResults, ruleName, resultNodes);
+        var truncated = !!auditResults.truncatedRules[ruleName];
+        addResult(auditResults, ruleName, resultNodes, truncated);
     }
 
     var failedRules = Object.keys(auditResults.failedRules);
