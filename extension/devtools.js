@@ -64,7 +64,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     auditResults.passedRules = {};
     auditResults.notApplicableRules = {};
     auditResults.failedRules = {};
-    auditResults.truncatedRules = {}
+    auditResults.truncatedRules = {};
     auditResults.maxResults = 100;  // TODO(alice): pref for maxResults
     for (var auditRuleName in axs.AuditRule.specs) {
         // Run rules by default, fill in prefs for previously unseen rules
@@ -141,6 +141,7 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
                                                   frameURL: frameURL }));
                 } else {
                     auditResults.truncatedRules[auditRule.name] = true;
+                    break;
                 }
             } else {
                 function addChild(auditResults, result) {
@@ -171,7 +172,7 @@ function addResult(auditResults, auditRuleName, resultNodes, truncated) {
     if (ruleName == '')
         ruleName = auditRule.heading;
     var resultString = '[' + severity + '] ' + ruleName + ' (' + resultNodes.length +
-       (truncated ? '+' : '') + ')';
+        (truncated ? '+' : '') + ')';
     if (truncated) {
         var truncatedMessage = chrome.i18n.getMessage('truncatedResults', [auditResults.maxResults]);
         resultNodes.unshift(truncatedMessage);
