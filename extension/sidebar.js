@@ -21,6 +21,7 @@ function updateView(result) {
         console.warn('non-object result:', result);
         return;
     }
+    console.log('result', result);
 
     var main = document.getElementById('main');
     main.innerHTML = '';
@@ -39,7 +40,7 @@ function updateView(result) {
                             }).appendTo(main);
             foundProperty = true;
         } catch (ex) {
-            console.error('Could not render results section', section, ex);
+            console.error('Could not render results section', section, ex.toString(), ex.stack);
         }
 
         if (sectionName == 'colorProperties' && 'contrastRatio' in section &&
@@ -53,6 +54,7 @@ function updateView(result) {
     }
     insertMessages();
     insertIdrefEventListeners();
+    insertElementRefEventListeners();
     updateHeight();
 }
 
@@ -70,6 +72,26 @@ function updateHeight() {
     var calculatedScrollHeight = styleHeight + 5; // not sure why 5 but it works
 
     window.sidebar.setHeight(calculatedScrollHeight + "px");
+}
+
+function insertElementRefEventListeners() {
+    var elementsWithElementRef = document.querySelectorAll('[element]');
+    for (var i = 0; i < elementsWithElementRef.length; i++) {
+        var element = elementsWithElementRef[i];
+        var elementRef = element.getAttribute('element');
+        addElementRefEventListener(element, elementRef);
+    }
+}
+
+function addElementRefEventListener(element, elementRef) {
+    element.addEventListener('click',
+                             function() {
+        chrome.devtools.inspectedWindow.eval(
+            'var node = axs.content.getSidebarNode("' + elementRef + '");\n' +
+            'inspect(node);',
+            { useContentScriptContext: true }
+        );
+    });
 }
 
 function insertIdrefEventListeners() {

@@ -22,6 +22,13 @@ if (!axs.content.auditResultNodes) {
     axs.content.auditResultNodes = {};
 }
 
+if (!axs.content.sidebarNodes) {
+    /**
+     * @type {Object.<string, Node>}
+     */
+    axs.content.sidebarNodes = {};
+}
+
 if (!axs.content.lastNodeId) {
     /** @type {number} */
     axs.content.lastNodeId = 0;
@@ -47,6 +54,26 @@ axs.content.getResultNode = function(nodeId) {
     return resultNode;
 };
 
+/**
+ * @param {Node} node
+ * @return {string} the ID of the node for lookup
+ */
+axs.content.convertNodeToSidebar = function(node) {
+    var nodeId = '' + axs.content.lastNodeId++;
+    axs.content.sidebarNodes[nodeId] = node;
+    return nodeId;
+};
+
+/**
+ * @param {string} nodeId
+ * @return {Node} node
+ */
+axs.content.getSidebarNode = function(nodeId) {
+    console.log('inspectSidebarNode("' + nodeId + '")');
+    var node = axs.content.sidebarNodes[nodeId];
+    delete axs.content.sidebarNodes[nodeId];
+    return node;
+};
 
 axs.content.removeHash = function(url) {
     var a = /** @type HTMLAnchorElement */ (document.createElement('a'));

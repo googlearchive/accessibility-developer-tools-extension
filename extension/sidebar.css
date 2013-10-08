@@ -65,7 +65,6 @@ li.property.warning {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: inline-block;
     font-family: Lucida Grande, sans-serif;
 }
 
@@ -95,6 +94,7 @@ li > div {
 }
 
 span.property {
+    font-family: Menlo, monospace;
     color: #C80000;
 }
 

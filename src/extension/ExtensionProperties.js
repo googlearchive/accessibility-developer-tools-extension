@@ -32,7 +32,9 @@ axs.extensionProperties.getAllProperties = function(node) {
             var value = tree[key];
             if (typeof value == "object") {
                 if (value instanceof Node)
-                    tree[key] = axs.content.convertNodeToResult(value);
+                    tree[key] = { 'node': axs.content.convertNodeToSidebar(value),
+                                  'text': value.id ? '#' + value.id
+                                                   : value.tagName.toLowerCase()};
                 else
                     tree[key] = convertNodes(tree[key]);
             }
