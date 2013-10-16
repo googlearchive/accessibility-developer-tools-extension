@@ -11,7 +11,7 @@
 {{?visible}}
       <li id="visible" class="property{{^visible.valid}} warning{{/}}">
         <span class="property">visibility</span>:{{?visible.value}}
-        <span id="visible-value">{{visible.value}}</span>
+        <span id="visible-value">visible</span>
         {{/}}<ul class="valuelist">
   {{?visible.transparent}}
           <li class="text">Transparent</li>
@@ -19,9 +19,9 @@
           <li class="text">Zero area</li>
   {{/}}{{?visible.outsideScrollArea}}
           <lie class="text">Outside scroll area</li>
-  {{/}}{{?visible.overlappingElement}}
+  {{/}}{{#visible.overlappingElements}}
           <li class="text">Obscured by
-            <a href="#" element="{{visible.overlappingElement.node}}">{{visible.overlappingElement.text}}</a>
+            <a href="#" element="{{node}}">{{text}}</a>
           </li>
   {{/}}
         </ul>

@@ -68,6 +68,10 @@ li.property.warning {
     font-family: Lucida Grande, sans-serif;
 }
 
+li.text {
+    margin-bottom: 2px;
+}
+
 li.textValue {
     display: block;
 }

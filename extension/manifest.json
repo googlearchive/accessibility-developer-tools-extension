@@ -1,6 +1,6 @@
 {
   "name": "__MSG_extName__",
-  "version": "2.8.3.1",
+  "version": "2.8.3.4",
   "description": "Accessibility audit and element properties.",
   "default_locale": "en",
   "icons": {
@@ -18,8 +18,7 @@
     "tabs",
     "webNavigation",
     "storage",
-    "<all_urls>",
-    "chrome://*/*"
+    "<all_urls>"
   ],
   "web_accessible_resources": [
     "generated/axs.js",
