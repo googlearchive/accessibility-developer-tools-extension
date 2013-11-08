@@ -71,6 +71,10 @@
         "message": "Contrast ratio",
         "description": "Label for the contrast ratio value in the sidebar"
     },
+    "focusProperties": {
+        "message": "Focus",
+        "description": "Heading for the 'Focus' sidebar section"
+    },
     "textProperties": {
         "message": "Text",
         "descrtiption": "Heading for the 'Text' sidebar section"
