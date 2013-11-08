@@ -77,13 +77,9 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(options, resultsCallba
     var toEval = '(' + addEventListener + ')("'+
         uniqueEventName + '", ' + this.test_ +
         ', ' + this.addElement  + ', ' + maxResults + ')'
-    if (options['contentScriptInjected']) {
-        chrome.devtools.inspectedWindow.eval(toEval,
-                                             { useContentScriptContext: true });
-    } else {
-        chrome.devtools.inspectedWindow.eval(toEval,
-                                             { useContentScriptContext: false });
-    }
+    var contentScriptInjected = options['contentScriptInjected'];
+    chrome.devtools.inspectedWindow.eval(
+        toEval, { useContentScriptContext: contentScriptInjected });
 
     function sendRelevantNodesToContentScript(matcher, eventName) {
         var relevantElements = [];
@@ -126,13 +122,6 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(options, resultsCallba
         return results;
     }
     toEval = '(' + retrieveResults + ')()';
-    if (options['contentScriptInjected']) {
-        chrome.devtools.inspectedWindow.eval(toEval,
-                                             { useContentScriptContext: true },
-                                             resultsCallback)
-    } else {
-        chrome.devtools.inspectedWindow.eval(toEval,
-                                             { useContentScriptContext: false },
-                                             resultsCallback)
-    }
+    chrome.devtools.inspectedWindow.eval(
+        toEval, { useContentScriptContext: contentScriptInjected }, resultsCallback);
 };
