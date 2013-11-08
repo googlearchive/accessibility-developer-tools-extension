@@ -74,10 +74,16 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(options, resultsCallba
         window.failingNodes = [];
         document.addEventListener(uniqueEventName, testElement, false);
     }
-    chrome.devtools.inspectedWindow.eval('(' + addEventListener + ')("'+
-                                         uniqueEventName + '", ' + this.test_ +
-                                         ', ' + this.addElement  + ', ' + maxResults + ')',
-                                         { useContentScriptContext: true });
+    var toEval = '(' + addEventListener + ')("'+
+        uniqueEventName + '", ' + this.test_ +
+        ', ' + this.addElement  + ', ' + maxResults + ')'
+    if (options['contentScriptInjected']) {
+        chrome.devtools.inspectedWindow.eval(toEval,
+                                             { useContentScriptContext: true });
+    } else {
+        chrome.devtools.inspectedWindow.eval(toEval,
+                                             { useContentScriptContext: false });
+    }
 
     function sendRelevantNodesToContentScript(matcher, eventName) {
         var relevantElements = [];
@@ -119,7 +125,14 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(options, resultsCallba
 
         return results;
     }
-    chrome.devtools.inspectedWindow.eval('(' + retrieveResults + ')()',
-                                         { useContentScriptContext: true },
-                                         resultsCallback)
+    toEval = '(' + retrieveResults + ')()';
+    if (options['contentScriptInjected']) {
+        chrome.devtools.inspectedWindow.eval(toEval,
+                                             { useContentScriptContext: true },
+                                             resultsCallback)
+    } else {
+        chrome.devtools.inspectedWindow.eval(toEval,
+                                             { useContentScriptContext: false },
+                                             resultsCallback)
+    }
 };

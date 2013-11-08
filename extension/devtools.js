@@ -88,7 +88,7 @@ function auditRunCallback(auditResults, items) {
     } else {
         chrome.devtools.inspectedWindow.eval(
             allScripts + 'axs.content.frameURIs',
-            { },
+            { useContentScriptContext: false },
             onURLsRetrieved.bind(null, auditResults, prefs));
     }
 }
@@ -116,6 +116,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
                                                          auditRule.severity, frameURL);
                 var auditOptions = { 'maxResults': auditResults.maxResults };
                 if (auditRule.requiresConsoleAPI) {
+                    auditOptions['contentScriptInjected'] = contentScriptInjected;
                     auditRule.runInDevtools(auditOptions, resultsCallback);
                 } else {
                     var stringToEval =
@@ -130,7 +131,8 @@ function onURLsRetrieved(auditResults, prefs, urls) {
                     } else {
                         chrome.devtools.inspectedWindow.eval(
                             stringToEval,
-                            { frameURL: frameURL },
+                            { useContentScriptContext: false,
+                              frameURL: frameURL },
                             resultsCallback);
                     }
                 }
@@ -187,7 +189,8 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
                     resultNodes.push(
                         auditResults.createNode(
                             'axs.content.getResultNode("' + result + '")',
-                            { frameURL: frameURL }));
+                            { useContentScriptContext: false,
+                              frameURL: frameURL }));
                 }
             } else {
                 auditResults.truncatedRules[auditRule.name] = true;
