@@ -14,7 +14,7 @@ function injectContentScript(tabId, remaining_scripts, opt_callback) {
             if (remaining_scripts.length)
                 injectContentScript(tabId, remaining_scripts, opt_callback);
             else if (opt_callback)
-                opt_callback();
+                opt_callback({ success: true });
         });
 };
 

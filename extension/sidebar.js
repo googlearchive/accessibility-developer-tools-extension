@@ -86,11 +86,14 @@ function insertElementRefEventListeners() {
 function addElementRefEventListener(element, elementRef) {
     element.addEventListener('click',
                              function() {
-        chrome.devtools.inspectedWindow.eval(
-            'var node = axs.content.getSidebarNode("' + elementRef + '");\n' +
-            'inspect(node);',
-            { useContentScriptContext: true }
-        );
+        var toEval = 'var node = axs.content.getSidebarNode("' + elementRef + '");\n' +
+                      'inspect(node);';
+        if (window.sidebar.contentScriptInjected) {
+            chrome.devtools.inspectedWindow.eval(
+                toEval, { useContentScriptContext: true });
+        } else {
+            chrome.devtools.inspectedWindow.eval(toEval);
+        }
     });
 }
 
@@ -124,10 +127,15 @@ function insertNodeIdEventListeners() {
 
 function addNodeIdEventListener(element, nodeId) {
     element.addEventListener('click', function() {
-        chrome.devtools.inspectedWindow.eval(
-            'var element = axs.content.getResultNode("' + nodeId + '");\n' +
-            'if (element) inspect(element);',
-            { useContentScriptContext: true });
+        var toEval = 'var element = axs.content.getResultNode("' + nodeId +
+            '");\n' +
+            'if (element) inspect(element);';
+        if (window.sidebar.contentScriptInjected) {
+            chrome.devtools.inspectedWindow.eval(
+                toEval, { useContentScriptContext: true });
+        } else {
+            chrome.devtools.inspectedWindow.eval(toEval);
+        }
     });
 }
 
@@ -170,20 +178,25 @@ function applyColors(foreground, background) {
         + '$0.style.background = "' + background + '";\n'
         + '$0.style.opacity = "1";\n'
         + '})();';
-    chrome.devtools.inspectedWindow.eval(
-        changeColor,
-        { useContentScriptContext: true });
+    chrome.devtools.inspectedWindow.eval(changeColor);
 }
 
 function gotBaseURI(result) {
     if (!result)
         return;
 
-    chrome.devtools.inspectedWindow.eval(
-        'axs.extensionProperties.getAllProperties($0);',
-        { useContentScriptContext: true,
-          frameURL: result },
-        updateView);
+    if (window.sidebar.contentScriptInjected) {
+        chrome.devtools.inspectedWindow.eval(
+            'axs.extensionProperties.getAllProperties($0);',
+            { useContentScriptContext: true,
+              frameURL: result },
+            updateView);
+    } else {
+        chrome.devtools.inspectedWindow.eval(
+            'axs.extensionProperties.getAllProperties($0);',
+            { frameURL: result },
+            updateView);
+    }
 }
 
 function onURLsRetrieved(result) {
@@ -191,20 +204,26 @@ function onURLsRetrieved(result) {
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
             '$0.baseURI;',
-            { frameURL: urls[i],
-              useContentScriptContext: true },
+            { frameURL: urls[i] },
             gotBaseURI);
     }
 }
 
 function onSelectionChanged() {
-    if (!chrome.devtools.inspectedWindow.tabId) {
+    if (!window.sidebar)
         return;
+
+    if (window.sidebar.contentScriptInjected) {
+        chrome.devtools.inspectedWindow.eval(
+            'axs.content.frameURIs;',
+            { useContentScriptContext: true },
+            onURLsRetrieved);
+    } else {
+        chrome.devtools.inspectedWindow.eval(
+            window.sidebar.allScripts + 'axs.content.frameURIs;',
+            {},
+            onURLsRetrieved);
     }
-    chrome.devtools.inspectedWindow.eval(
-        'axs.content.frameURIs;',
-        { useContentScriptContext: true },
-        onURLsRetrieved);
 }
 
 function insertMessages() {
@@ -217,4 +236,3 @@ function insertMessages() {
 
 chrome.devtools.panels.elements.onSelectionChanged.addListener(onSelectionChanged);
 insertMessages();
-onSelectionChanged();
