@@ -12,15 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var contentScriptInjected = false;
+var allScripts = null;
+
 if (chrome.devtools.inspectedWindow.tabId) {
     chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
                                    command: 'injectContentScripts' }, init);
+} else {
+    init();
 }
 
 function init(result) {
-    if (result && 'error' in result) {
-        console.warn('Could not initialise extension:' + result.error);
-        return;
+    if (result) {
+        if ('error' in result)
+            console.warn('Could not inject content script; falling back to eval',
+                         result.error);
+        else
+            contentScriptInjected = true;
+    }
+    if (!contentScriptInjected) {
+        if (window.File && window.FileReader && window.FileList) {
+            var scriptFiles = [ 'generated/axs.js',
+                                'generated/constants.js',
+                                'generated/utils.js',
+                                'generated/properties.js',
+                                'generated/audits.js',
+                                'generated/extension_properties.js',
+                                'generated/extension_audits.js' ];
+            var scripts = [];
+            for (var i = 0; i < scriptFiles.length; i++) {
+                try {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', chrome.extension.getURL(scriptFiles[i]), false);
+                    xhr.send();
+                    scripts.push(xhr.responseText);
+                } catch(ex) {
+                    console.error('Could not get script "' + scriptFiles[i] + '";  aborting.',
+                                  ex);
+                    return;
+                }
+
+            }
+            allScripts = scripts.join('\n') + '\n';
+        }
     }
 
     var numAuditRules = Object.keys(axs.AuditRule.specs).length;
@@ -35,7 +69,11 @@ function init(result) {
             sidebar.setPage("sidebar.html");
             sidebar.onShown.addListener(function(window) {
                 window.sidebar = sidebar;
-            })
+                window.sidebar.contentScriptInjected = contentScriptInjected;
+                if (!contentScriptInjected)
+                    window.sidebar.allScripts = allScripts;
+                window.onSelectionChanged();
+            });
         });
 }
 
@@ -50,10 +88,13 @@ function auditRunCallback(auditResults, items) {
         var prefs = items['auditRules'];
     else
         var prefs = {};
+
+    var toEval = (contentScriptInjected ? '' : allScripts) + 'axs.content.frameURIs';
+
     chrome.devtools.inspectedWindow.eval(
-        'axs.content.frameURIs',
-        { useContentScriptContext: true },
-        onURLsRetrieved.bind(null, auditResults, prefs));
+            toEval,
+            { useContentScriptContext: contentScriptInjected },
+            onURLsRetrieved.bind(null, auditResults, prefs));
 }
 
 function onURLsRetrieved(auditResults, prefs, urls) {
@@ -79,14 +120,16 @@ function onURLsRetrieved(auditResults, prefs, urls) {
                                                          auditRule.severity, frameURL);
                 var auditOptions = { 'maxResults': auditResults.maxResults };
                 if (auditRule.requiresConsoleAPI) {
+                    auditOptions['contentScriptInjected'] = contentScriptInjected;
                     auditRule.runInDevtools(auditOptions, resultsCallback);
                 } else {
                     var stringToEval =
                         'var rule = axs.ExtensionAuditRules.getRule("' + auditRuleName + '");\n' +
                         'rule.run(' + JSON.stringify(auditOptions) + ');';
+
                     chrome.devtools.inspectedWindow.eval(
                         stringToEval,
-                        { useContentScriptContext: true,
+                        { useContentScriptContext: contentScriptInjected,
                           frameURL: frameURL },
                         resultsCallback);
                 }
@@ -129,35 +172,18 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
             resultNodes = auditResults.failedRules[auditRule.name];
 
         if (results.resultsTruncated)
-            auditResult.truncatedRules[auditRule.name] = true;
+            auditResults.truncatedRules[auditRule.name] = true;
 
         for (var i = 0; i < results.elements.length; ++i) {
             var result = results.elements[i];
-            if (auditResults.createNode) {
-                if (resultNodes.length < auditResults.maxResults) {
-                    resultNodes.push(
-                        auditResults.createNode('axs.content.getResultNode("' + result + '")',
-                                                { useContentScriptContext: true,
-                                                  frameURL: frameURL }));
-                } else {
-                    auditResults.truncatedRules[auditRule.name] = true;
-                    break;
-                }
+            if (resultNodes.length < auditResults.maxResults) {
+                resultNodes.push(
+                    auditResults.createNode('axs.content.getResultNode("' + result + '")',
+                                            { useContentScriptContext: contentScriptInjected,
+                                              frameURL: frameURL }));
             } else {
-                function addChild(auditResults, result) {
-                    if (resultNodes.length < auditResults.maxResults)
-                        resultNodes.push(auditResults.createSnippet(result));
-                    else
-                        auditResults.truncatedRules[auditRule.name] = true;
-                    auditResults.callbacksPending--;
-                    resultCallbacksPending--;
-                }
-                auditResults.callbacksPending++;
-                resultCallbacksPending++;
-                chrome.devtools.inspectedWindow.eval(
-                    'axs.content.getResultNode("' + result + '").outerHTML',
-                    { useContentScriptContext: true },
-                    addChild.bind(null, auditResults));
+                auditResults.truncatedRules[auditRule.name] = true;
+                break;
             }
         }
     }
