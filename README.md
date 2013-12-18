@@ -15,3 +15,27 @@ limitations under the License.
 # Accessibility Developer Tools (extension)
 
 You can install the Accessibility Developer Tools extension from the [Chrome Web Store page](https://chrome.google.com/webstore/detail/accessibility-developer-t/fpkknkljclfencbdbgkenhalefipecmb?utm_source=chrome-ntp-icon).
+
+# Checkout, build and run
+
+## Checkout
+
+```
+git clone --recursive https://github.com/GoogleChrome/accessibility-developer-tools-extension.git
+```
+
+## Build
+
+```
+cd accessibility-developer-tools-extension
+make
+```
+
+This will run Closure compiler on all the JS sources and place generated outputs in `extension`.
+
+## Run
+
+The [http://developer.chrome.com/extensions/getstarted.html#unpacked](Chrome extension developer documentation) has the instructions for loading an unpacked extension; `extension` is the the directory containing the manifest, so this should be the directory you load.
+
+Note: if you already have the web store version of Accessibility Developer Tools, you might want to modify the manifest (`extension/manifest.json`) to display a different name for your local copy. This does not require re-building the project.
+
