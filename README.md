@@ -36,6 +36,8 @@ This will run Closure compiler on all the JS sources and place generated outputs
 
 ## Run
 
+First, you need to enable the "experimental extension APIs" flag on chrome://flags. This will require restarting Chrome to take effect.
+
 The [http://developer.chrome.com/extensions/getstarted.html#unpacked](Chrome extension developer documentation) has the instructions for loading an unpacked extension; `extension` is the the directory containing the manifest, so this should be the directory you load.
 
 Note: if you already have the web store version of Accessibility Developer Tools, you might want to modify the manifest (`extension/manifest.json`) to display a different name for your local copy. This does not require re-building the project.
