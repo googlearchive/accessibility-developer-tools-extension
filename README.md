@@ -25,6 +25,7 @@ git clone --recursive https://github.com/GoogleChrome/accessibility-developer-to
 ```
 
 ## Build
+Download the [http://dl.google.com/closure-compiler/compiler-latest.zip](Closure compiler jar) and put it in ~/src/closure/compiler.jar.
 
 ```
 cd accessibility-developer-tools-extension
