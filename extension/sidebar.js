@@ -21,6 +21,7 @@ function updateView(result) {
         console.warn('non-object result:', result);
         return;
     }
+    console.log('result', result);
 
     var main = document.getElementById('main');
     main.innerHTML = '';
@@ -40,7 +41,7 @@ function updateView(result) {
                             }).appendTo(main);
             foundProperty = true;
         } catch (ex) {
-            console.error('Could not render results section', section, ex);
+            console.error('Could not render results section', section, ex.toString(), ex.stack);
         }
 
         if (sectionName == 'colorProperties' && 'contrastRatio' in section &&
@@ -54,6 +55,7 @@ function updateView(result) {
     }
     insertMessages();
     insertIdrefEventListeners();
+    insertElementRefEventListeners();
     updateHeight();
 }
 
@@ -94,6 +96,29 @@ function updateHeight() {
     window.sidebar.setHeight(calculatedScrollHeight + "px");
 }
 
+function insertElementRefEventListeners() {
+    var elementsWithElementRef = document.querySelectorAll('[element]');
+    for (var i = 0; i < elementsWithElementRef.length; i++) {
+        var element = elementsWithElementRef[i];
+        var elementRef = element.getAttribute('element');
+        addElementRefEventListener(element, elementRef);
+    }
+}
+
+function addElementRefEventListener(element, elementRef) {
+    element.addEventListener('click',
+                             function() {
+        var toEval = 'var node = axs.content.getSidebarNode("' + elementRef + '");\n' +
+                      'inspect(node);';
+        if (window.sidebar.contentScriptInjected) {
+            chrome.devtools.inspectedWindow.eval(
+                toEval, { useContentScriptContext: true });
+        } else {
+            chrome.devtools.inspectedWindow.eval(toEval);
+        }
+    });
+}
+
 function insertIdrefEventListeners() {
     var elementsWithIdref = document.querySelectorAll('[idref]');
     for (var i = 0; i < elementsWithIdref.length; i++) {
@@ -124,10 +149,15 @@ function insertNodeIdEventListeners() {
 
 function addNodeIdEventListener(element, nodeId) {
     element.addEventListener('click', function() {
-        chrome.devtools.inspectedWindow.eval(
-            'var element = axs.content.getResultNode("' + nodeId + '");\n' +
-            'if (element) inspect(element);',
-            { useContentScriptContext: true });
+        var toEval = 'var element = axs.content.getResultNode("' + nodeId +
+            '");\n' +
+            'if (element) inspect(element);';
+        if (window.sidebar.contentScriptInjected) {
+            chrome.devtools.inspectedWindow.eval(
+                toEval, { useContentScriptContext: true });
+        } else {
+            chrome.devtools.inspectedWindow.eval(toEval);
+        }
     });
 }
 
@@ -170,20 +200,25 @@ function applyColors(foreground, background) {
         + '$0.style.background = "' + background + '";\n'
         + '$0.style.opacity = "1";\n'
         + '})();';
-    chrome.devtools.inspectedWindow.eval(
-        changeColor,
-        { useContentScriptContext: true });
+    chrome.devtools.inspectedWindow.eval(changeColor);
 }
 
 function gotBaseURI(result) {
     if (!result)
         return;
 
-    chrome.devtools.inspectedWindow.eval(
-        'axs.extensionProperties.getAllProperties($0);',
-        { useContentScriptContext: true,
-          frameURL: result },
-        updateView);
+    if (window.sidebar.contentScriptInjected) {
+        chrome.devtools.inspectedWindow.eval(
+            'axs.extensionProperties.getAllProperties($0);',
+            { useContentScriptContext: true,
+              frameURL: result },
+            updateView);
+    } else {
+        chrome.devtools.inspectedWindow.eval(
+            'axs.extensionProperties.getAllProperties($0);',
+            { frameURL: result },
+            updateView);
+    }
 }
 
 function onURLsRetrieved(result) {
@@ -191,20 +226,26 @@ function onURLsRetrieved(result) {
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
             '$0.baseURI;',
-            { frameURL: urls[i],
-              useContentScriptContext: true },
+            { frameURL: urls[i] },
             gotBaseURI);
     }
 }
 
 function onSelectionChanged() {
-    if (!chrome.devtools.inspectedWindow.tabId) {
+    if (!window.sidebar)
         return;
+
+    if (window.sidebar.contentScriptInjected) {
+        chrome.devtools.inspectedWindow.eval(
+            'axs.content.frameURIs;',
+            { useContentScriptContext: true },
+            onURLsRetrieved);
+    } else {
+        chrome.devtools.inspectedWindow.eval(
+            window.sidebar.allScripts + 'axs.content.frameURIs;',
+            {},
+            onURLsRetrieved);
     }
-    chrome.devtools.inspectedWindow.eval(
-        'axs.content.frameURIs;',
-        { useContentScriptContext: true },
-        onURLsRetrieved);
 }
 
 function insertMessages() {
@@ -217,4 +258,3 @@ function insertMessages() {
 
 chrome.devtools.panels.elements.onSelectionChanged.addListener(onSelectionChanged);
 insertMessages();
-onSelectionChanged();

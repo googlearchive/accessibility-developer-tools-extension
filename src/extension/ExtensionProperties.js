@@ -31,10 +31,22 @@ axs.extensionProperties.getAllProperties = function(node) {
         for (var key in tree) {
             var value = tree[key];
             if (typeof value == "object") {
-                if (value instanceof Node)
-                    tree[key] = axs.content.convertNodeToResult(value);
-                else
+                if (value instanceof Node) {
+                    var node = /** (@type {Node}) */ value;
+                    var querySelectorText = axs.utils.getQuerySelectorText(node);
+                    if (querySelectorText.indexOf(' ') < 0) {
+                        var text = querySelectorText;
+                    } else {
+                        var text = node.tagName.toLowerCase();
+                        var className = node.className;
+                        if (className)
+                            text += '.' + className;
+                    }
+                    tree[key] = { 'node': axs.content.convertNodeToSidebar(node),
+                                  'text': text };
+                } else {
                     tree[key] = convertNodes(tree[key]);
+                }
             }
         }
         return tree;

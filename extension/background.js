@@ -2,7 +2,6 @@ var inspectedTabs = [];
 
 function injectContentScript(tabId, remaining_scripts, opt_callback) {
     var script = remaining_scripts.shift();
-    console.log('injectContentScript', script);
     chrome.tabs.executeScript(
         tabId,
         { file: script, allFrames: true },
@@ -15,7 +14,7 @@ function injectContentScript(tabId, remaining_scripts, opt_callback) {
             if (remaining_scripts.length)
                 injectContentScript(tabId, remaining_scripts, opt_callback);
             else if (opt_callback)
-                opt_callback();
+                opt_callback({ success: true });
         });
 };
 
@@ -32,15 +31,22 @@ function injectContentScripts(tabId, opt_callback) {
 
 chrome.extension.onRequest.addListener(
     function(request, sender, callback) {
-        var tabId = request.tabId;
-        injectContentScripts(tabId, callback);
-        if (inspectedTabs.indexOf(tabId) == -1) {
-            chrome.webNavigation.onCommitted.addListener(
-                function(details) {
-                    if (details.tabId == tabId && details.frameId == 0) {
-                        injectContentScripts(tabId);
-                    }
-                });
+        switch(request.command) {
+        case 'injectContentScripts':
+            var tabId = request.tabId;
+            injectContentScripts(tabId, callback);
+            if (inspectedTabs.indexOf(tabId) == -1) {
+                chrome.webNavigation.onCommitted.addListener(
+                    function(details) {
+                        if (details.tabId == tabId && details.frameId == 0) {
+                            injectContentScripts(tabId);
+                        }
+                    });
+            }
             inspectedTabs.push(tabId);
+            return;
+        case 'getAuditPrefs':
+            chrome.storage.sync.get('auditRules', callback);
+            return;
         }
 });

@@ -13,12 +13,20 @@
 // limitations under the License.
 
 goog.provide('axs.content');
+goog.require('axs.utils');
 
 if (!axs.content.auditResultNodes) {
     /**
      * @type {Object.<string, Node>}
      */
     axs.content.auditResultNodes = {};
+}
+
+if (!axs.content.sidebarNodes) {
+    /**
+     * @type {Object.<string, Node>}
+     */
+    axs.content.sidebarNodes = {};
 }
 
 if (!axs.content.lastNodeId) {
@@ -46,6 +54,26 @@ axs.content.getResultNode = function(nodeId) {
     return resultNode;
 };
 
+/**
+ * @param {Node} node
+ * @return {string} the ID of the node for lookup
+ */
+axs.content.convertNodeToSidebar = function(node) {
+    var nodeId = '' + axs.content.lastNodeId++;
+    axs.content.sidebarNodes[nodeId] = node;
+    return nodeId;
+};
+
+/**
+ * @param {string} nodeId
+ * @return {Node} node
+ */
+axs.content.getSidebarNode = function(nodeId) {
+    console.log('inspectSidebarNode("' + nodeId + '")');
+    var node = axs.content.sidebarNodes[nodeId];
+    delete axs.content.sidebarNodes[nodeId];
+    return node;
+};
 
 axs.content.removeHash = function(url) {
     var a = /** @type HTMLAnchorElement */ (document.createElement('a'));
@@ -87,6 +115,8 @@ window.addEventListener('message',  function(e) {
 var iframes = document.querySelectorAll('iframe');
 for (var i = 0; i < iframes.length; i++) {
     var iframe = iframes[i];
+    if (axs.utils.isElementOrAncestorHidden(iframe))
+        continue;
     var frameOrigin = '*';
     var src = iframe.src;
     if (src && src.length > 0)

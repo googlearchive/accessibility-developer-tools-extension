@@ -53,6 +53,16 @@
         "message": " for more information.",
         "description": "Text to insert after the audit result more information URL. Full English example: 'See [AX_TEXT_01] for more information.' In this case, 'See ' is the 'audit_url_before' value, and ' for more information' is the audit_url_after' value. Note that placeholders can't be used in this case as the three parts are different nodes. For RTL languages, 'before' and 'after' should be reversed."
     },
+    "truncatedResults": {
+        "message": "Results truncated to $maxResults$ elements.",
+        "description": "Warning shown when number of audit results for a particular rule has been truncated",
+        "placeholders": {
+            "maxResults": {
+                "content": "$1",
+                "example": "100"
+            }
+        }
+    },
     "colorProperties": {
         "message": "Color",
         "description": "Heading for the 'Color' sidebar section"
@@ -60,6 +70,10 @@
     "contrastRatio": {
         "message": "Contrast ratio",
         "description": "Label for the contrast ratio value in the sidebar"
+    },
+    "focusProperties": {
+        "message": "Focus",
+        "description": "Heading for the 'Focus' sidebar section"
     },
     "textProperties": {
         "message": "Text",

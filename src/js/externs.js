@@ -14,6 +14,7 @@
 
 var chrome = { };
 chrome.i18n = { };
+chrome.runtime = { };
 chrome.devtools = { };
 chrome.devtools.inspectedWindow = { };
 /**
@@ -28,4 +29,3 @@ chrome.devtools.inspectedWindow.eval = function(string, opt_options, opt_callbac
  * @param {...(boolean|number|Object|string)} var_args
  */
 chrome.i18n.getMessage = function(id, var_args) { };
-
