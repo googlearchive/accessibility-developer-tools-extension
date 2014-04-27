@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var chrome = { };
 chrome.i18n = { };
 chrome.runtime = { };
 chrome.devtools = { };
 chrome.devtools.inspectedWindow = { };
+
+/**
+ * @type {number}
+ */
+chrome.runtime.id;
+
 /**
  * @param {string} string
  * @param {Object=} opt_options,
