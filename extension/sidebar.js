@@ -203,7 +203,7 @@ function onURLsRetrieved(result) {
     var urls = Object.keys(result);
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
-            '$0.baseURI;',
+            '$0.ownerDocument.baseURI;',
             { frameURL: urls[i] },
             gotBaseURI);
     }
