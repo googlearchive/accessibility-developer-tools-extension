@@ -69,20 +69,19 @@ axs.content.convertNodeToSidebar = function(node) {
  * @return {Node} node
  */
 axs.content.getSidebarNode = function(nodeId) {
-    console.log('inspectSidebarNode("' + nodeId + '")');
     var node = axs.content.sidebarNodes[nodeId];
     delete axs.content.sidebarNodes[nodeId];
     return node;
 };
 
-axs.content.removeHash = function(url) {
+axs.content.removeFragment = function(url) {
     var a = /** @type HTMLAnchorElement */ (document.createElement('a'));
     a.href = url;
     return a.protocol + "//" + a.host + a.pathname + a.search
 }
 
 axs.content.frameURIs = {};
-axs.content.frameURIs[axs.content.removeHash(document.documentURI)] = true;
+axs.content.frameURIs[axs.content.removeFragment(document.documentURI)] = true;
 
 window.addEventListener('message',  function(e) {
     if (typeof e.data != 'object')
@@ -95,7 +94,7 @@ window.addEventListener('message',  function(e) {
                 origin = e.data['returnOrigin'];
             e.source.postMessage(
                 { 'request': 'postUri',
-                  'uri': axs.content.removeHash(document.documentURI) },
+                  'uri': axs.content.removeFragment(document.documentURI) },
                 origin);
             break;
         case 'postUri':
@@ -120,8 +119,8 @@ for (var i = 0; i < iframes.length; i++) {
     var frameOrigin = '*';
     var src = iframe.src;
     if (src && src.length > 0)
-        frameOrigin = axs.content.removeHash(src);
-    var docOrigin = axs.content.removeHash(document.documentURI);
+        frameOrigin = axs.content.removeFragment(src);
+    var docOrigin = axs.content.removeFragment(document.documentURI);
     try {
         iframe.contentWindow.postMessage({'request': 'getUri' ,
                                           'returnOrigin': docOrigin}, frameOrigin);

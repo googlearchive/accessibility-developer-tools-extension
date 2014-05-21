@@ -90,7 +90,6 @@ function auditRunCallback(auditResults, items) {
         var prefs = {};
 
     var toEval = (contentScriptInjected ? '' : allScripts) + 'axs.content.frameURIs';
-
     chrome.devtools.inspectedWindow.eval(
             toEval,
             { useContentScriptContext: contentScriptInjected },

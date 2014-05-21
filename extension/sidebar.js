@@ -189,12 +189,12 @@ function gotBaseURI(result) {
         chrome.devtools.inspectedWindow.eval(
             'axs.extensionProperties.getAllProperties($0);',
             { useContentScriptContext: true,
-              frameURL: result },
+              frameURL: axs.content.removeFragment(result) },
             updateView);
     } else {
         chrome.devtools.inspectedWindow.eval(
             'axs.extensionProperties.getAllProperties($0);',
-            { frameURL: result },
+            { frameURL: axs.content.removeFragment(result) },
             updateView);
     }
 }
