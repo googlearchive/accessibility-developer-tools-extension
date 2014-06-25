@@ -94,6 +94,7 @@ axs.ExtensionAuditRule.prototype.runInDevtools = function(options, resultsCallba
     var stringToEval = '(function() { var axs = {};\n' +
         'axs.utils = {};\n' +
         // TODO all of axs.utils? Have selected methods in AuditRule?
+        'axs.utils.parentElement = ' + axs.utils.parentElement + ';\n' +
         'axs.utils.isElementHidden = ' + axs.utils.isElementHidden + ';\n' +
         'axs.utils.isElementOrAncestorHidden = ' + axs.utils.isElementOrAncestorHidden + ';\n' +
         'axs.utils.isElementImplicitlyFocusable = ' + axs.utils.isElementImplicitlyFocusable + ';\n' +
