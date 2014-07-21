@@ -36,7 +36,7 @@ chrome.extension.onRequest.addListener(
             var tabId = request.tabId;
             injectContentScripts(tabId, callback);
             if (inspectedTabs.indexOf(tabId) == -1) {
-                chrome.webNavigation.onCommitted.addListener(
+                chrome.webNavigation.onCompleted.addListener(
                     function(details) {
                         if (details.tabId == tabId && details.frameId == 0) {
                             injectContentScripts(tabId);
