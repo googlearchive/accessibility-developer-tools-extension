@@ -34,12 +34,32 @@ chrome.extension.onRequest.addListener(
         switch(request.command) {
         case 'injectContentScripts':
             var tabId = request.tabId;
+            var framesLoaded = {};
+            var framesInjected = null;
             injectContentScripts(tabId, callback);
             if (inspectedTabs.indexOf(tabId) == -1) {
-                chrome.webNavigation.onCompleted.addListener(
+                chrome.webNavigation.onBeforeNavigate.addListener(
                     function(details) {
                         if (details.tabId == tabId && details.frameId == 0) {
+                            framesLoaded = {};
+                            framesInjected = null;
+                        }
+                    });
+                chrome.webNavigation.onDOMContentLoaded.addListener(
+                    function(details) {
+                        framesLoaded[details.frameId] = true;
+                    });
+                chrome.webNavigation.onCompleted.addListener(
+                    function(details) {
+                        if (details.tabId != tabId)
+                            return;
+
+                        if (details.frameId == 0) {
                             injectContentScripts(tabId);
+                            framesInjected = Object.keys(framesLoaded);
+                        } else if (framesInjected && framesInjected.indexOf(details.frameId) == -1) {
+                            injectContentScripts(tabId);
+                            framesInjected.push(details.frameId);
                         }
                     });
             }
