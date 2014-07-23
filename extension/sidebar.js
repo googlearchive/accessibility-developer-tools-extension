@@ -184,7 +184,6 @@ function applyColors(foreground, background) {
 function gotBaseURI(result) {
     if (!result)
         return;
-
     if (window.sidebar.contentScriptInjected) {
         chrome.devtools.inspectedWindow.eval(
             'axs.extensionProperties.getAllProperties($0);',
@@ -203,7 +202,7 @@ function onURLsRetrieved(result) {
     var urls = Object.keys(result);
     for (var i = 0; i < urls.length; i++) {
         chrome.devtools.inspectedWindow.eval(
-            '$0.ownerDocument.baseURI;',
+            '$0.ownerDocument.documentURI;',
             { frameURL: urls[i] },
             gotBaseURI);
     }
