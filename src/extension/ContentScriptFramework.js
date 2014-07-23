@@ -80,8 +80,10 @@ axs.content.removeFragment = function(url) {
     return a.protocol + "//" + a.host + a.pathname + a.search
 }
 
-axs.content.frameURIs = {};
-axs.content.frameURIs[axs.content.removeFragment(document.documentURI)] = true;
+if (!axs.content.frameURIs) {
+    axs.content.frameURIs = {};
+    axs.content.frameURIs[axs.content.removeFragment(document.documentURI)] = true;
+}
 
 window.addEventListener('message',  function(e) {
     if (typeof e.data != 'object')
@@ -89,13 +91,10 @@ window.addEventListener('message',  function(e) {
     if ('request' in e.data) {
         switch (e.data['request']) {
         case 'getUri':
-            var origin = '*';
-            if ('returnOrigin' in e.data)
-                origin = e.data['returnOrigin'];
             e.source.postMessage(
                 { 'request': 'postUri',
                   'uri': axs.content.removeFragment(document.documentURI) },
-                origin);
+                '*')
             break;
         case 'postUri':
             if (window.parent != window) {
@@ -105,28 +104,37 @@ window.addEventListener('message',  function(e) {
                 axs.content.frameURIs[uri] = true;
             }
             break;
+        case 'deleteUri':
+            if (window.parent != window) {
+                window.parent.postMessage(e.data, '*')
+            } else {
+                var uri = e.data['uri'];
+                delete axs.content.frameURIs[uri];
+            }
         }
     }
 }, false);
 
-(function() {
+window.addEventListener('beforeunload', function(e) {
+  if (window.parent == window)
+      return;
 
-var iframes = document.querySelectorAll('iframe');
+  window.parent.postMessage({'request': 'deleteUri' ,
+                             'uri': axs.content.removeFragment(document.documentURI)},
+                            '*');
+
+}, false);
+
+(function() {
+var iframes = window.frames;
 for (var i = 0; i < iframes.length; i++) {
     var iframe = iframes[i];
-    if (axs.utils.isElementOrAncestorHidden(iframe))
-        continue;
-    var frameOrigin = '*';
-    var src = iframe.src;
-    if (src && src.length > 0)
-        frameOrigin = axs.content.removeFragment(src);
     var docOrigin = axs.content.removeFragment(document.documentURI);
     try {
-        iframe.contentWindow.postMessage({'request': 'getUri' ,
-                                          'returnOrigin': docOrigin}, frameOrigin);
+        iframe.postMessage({'request': 'getUri'}, '*');
     } catch (e) {
         console.warn('got exception when trying to postMessage from ' +
-                     docOrigin + ' to ' + frameOrigin, e);
+                     docOrigin + ' to frame', iframe, e);
     }
 }
 })();
