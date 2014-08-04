@@ -33,10 +33,10 @@ function injectContentScript(tabId, remaining_scripts, token) {
 };
 
 function injectContentScripts(tabId) {
-    if (!(tabId in contentScriptTokens)) {
-        contentScriptTokens[tabId] = 0;
-    } else {
+    if (tabId in contentScriptTokens) {
         contentScriptTokens[tabId]++;
+    } else {
+        contentScriptTokens[tabId] = 0;
     }
     var token = contentScriptTokens[tabId];
     var scripts = [ 'generated/axs.js',
