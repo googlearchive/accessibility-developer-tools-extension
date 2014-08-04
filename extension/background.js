@@ -56,27 +56,35 @@ chrome.extension.onRequest.addListener(
             var tabId = request.tabId;
             var topFrameLoaded = true;
             if (!(tabId in inspectedTabs)) {
-                chrome.webNavigation.onBeforeNavigate.addListener(
-                    function(details) {
-                        if (details.tabId == tabId && details.frameId == 0) {
-                            topFrameLoaded = false;
-                        }
-                    });
-                chrome.webNavigation.onCompleted.addListener(
-                    function(details) {
-                        if (details.tabId != tabId)
-                            return;
-                        if (details.frameId == 0) {
-                            // When the top frame completes loading, inject content scripts into all
-                            // frames. Copy the list of all frames seen so far into |framesInjected|
-                            injectContentScripts(tabId);
-                            topFrameLoaded = true;
-                        } else if (topFrameLoaded) {
-                            // If a frame completes loading after the top frame, we need to inject
-                            // content scripts into all frames again, so that we catch this one.
-                            injectContentScripts(tabId);
-                        }
-                    });
+                var beforeNavigateCallback = function(details) {
+                    if (details.tabId == tabId && details.frameId == 0) {
+                        topFrameLoaded = false;
+                    }
+                }
+                chrome.webNavigation.onBeforeNavigate.addListener(beforeNavigateCallback);
+                var completedCallback = function(details) {
+                    if (details.tabId != tabId)
+                        return;
+                    if (details.frameId == 0) {
+                        // When the top frame completes loading, inject content scripts into all
+                        // frames. Copy the list of all frames seen so far into |framesInjected|
+                        injectContentScripts(tabId);
+                        topFrameLoaded = true;
+                    } else if (topFrameLoaded) {
+                        // If a frame completes loading after the top frame, we need to inject
+                        // content scripts into all frames again, so that we catch this one.
+                        injectContentScripts(tabId);
+                    }
+                };
+                chrome.webNavigation.onCompleted.addListener(completedCallback);
+
+                chrome.tabs.onRemoved.addListener(function(removedTabId) {
+                    if (removedTabId != tabId)
+                        return;
+
+                    chrome.webNavigation.onBeforeNavigate.removeListener(beforeNavigateCallback);
+                    chrome.webNavigation.onCompleted.removeListener(completedCallback);
+                });
             }
             // Store the callback so we can call it when all scripts have been injected into all
             // frames.
