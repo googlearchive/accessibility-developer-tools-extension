@@ -106,6 +106,10 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     auditResults.failedRules = {};
     auditResults.truncatedRules = {};
     auditResults.maxResults = 100;  // TODO(alice): pref for maxResults
+
+    var auditOptions = { 'maxResults': auditResults.maxResults };
+    var runInDevtoolsAuditOptions = { 'maxResults': auditResults,
+                                      'contentScriptInjected': contentScriptInjected }
     for (var auditRuleName in axs.AuditRule.specs) {
         // Run rules by default, fill in prefs for previously unseen rules
         if (!(auditRuleName in prefs))
@@ -117,10 +121,8 @@ function onURLsRetrieved(auditResults, prefs, urls) {
                 var frameURL = urlValues[i];
                 var resultsCallback = handleResults.bind(null, auditResults, auditRule,
                                                          auditRule.severity, frameURL);
-                var auditOptions = { 'maxResults': auditResults.maxResults };
                 if (auditRule.requiresConsoleAPI) {
-                    auditOptions['contentScriptInjected'] = contentScriptInjected;
-                    auditRule.runInDevtools(auditOptions, resultsCallback);
+                    auditRule.runInDevtools(runInDevtoolsAuditOptions, resultsCallback);
                 } else {
                     var stringToEval =
                         'var rule = axs.ExtensionAuditRules.getRule("' + auditRuleName + '");\n' +
