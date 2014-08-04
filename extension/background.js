@@ -1,14 +1,18 @@
+// Map of tabId to either a callback or an empty object.
 var inspectedTabs = {};
+
+// Map of tabId to a token indicating which iteration of content script injection is current.
 var contentScriptTokens = {};
 
 function injectContentScript(tabId, remaining_scripts, token) {
+    // If a new round of injecting has started, bail out of this one.
     if (token != contentScriptTokens[tabId]) {
         return;
     }
     var script = remaining_scripts.shift();
     chrome.tabs.executeScript(
         tabId,
-        { file: script, allFrames: true },
+        { file: script, allFrames: true }, // Would be nice if we could specify a frame id here
         function() {
             if (chrome.extension.lastError) {
                 if ('callback' in inspectedTabs[tabId]) {
@@ -18,9 +22,9 @@ function injectContentScript(tabId, remaining_scripts, token) {
                 }
                 return;
             }
-            if (remaining_scripts.length)
+            if (remaining_scripts.length) {
                 injectContentScript(tabId, remaining_scripts, token);
-            else if ('callback' in inspectedTabs[tabId]) {
+            } else if ('callback' in inspectedTabs[tabId]) {
                 var callback = inspectedTabs[tabId].callback;
                 callback({ success: true });
                 delete inspectedTabs[tabId].callback;
@@ -74,6 +78,8 @@ chrome.extension.onRequest.addListener(
                         }
                     });
             }
+            // Store the callback so we can call it when all scripts have been injected into all
+            // frames.
             inspectedTabs[tabId] = { callback: callback };
             injectContentScripts(tabId);
             return;
