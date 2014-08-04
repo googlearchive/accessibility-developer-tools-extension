@@ -84,6 +84,8 @@ chrome.extension.onRequest.addListener(
 
                     chrome.webNavigation.onBeforeNavigate.removeListener(beforeNavigateCallback);
                     chrome.webNavigation.onCompleted.removeListener(completedCallback);
+                    delete inspectedTabs[tabId];
+                    delete contentScriptTokens[tabId];
                 });
             }
             // Store the callback so we can call it when all scripts have been injected into all
