@@ -10,6 +10,7 @@ TEMPLATES_LIB_FILE = ./extension/Handlebar.js
 TEST_DIR = ./test
 TEST_DEPENDENCIES_FILE = generated_dependencies.js
 TEST_DEPENDENCIES_REL_DIR = generated
+OUTPUT_WRAPPER = 'if (!axs) { var axs = {}; var goog = {}; } %s'
 
 CLOSURE_JAR = ~/src/closure/compiler.jar
 EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
@@ -20,23 +21,29 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
   --js $(ACCESSIBILITY_UTILS)/js/axs.js \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \
+--module_wrapper constants:$(OUTPUT_WRAPPER) \
 --module utils:2:constants \
   --js $(ACCESSIBILITY_UTILS)/js/AccessibilityUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/BrowserUtils.js \
+--module_wrapper utils:$(OUTPUT_WRAPPER) \
 --module properties:1:utils,constants \
   --js $(ACCESSIBILITY_UTILS)/js/Properties.js \
+--module_wrapper properties:$(OUTPUT_WRAPPER) \
 --module audits:$(NUM_AUDIT_RULE_SOURCES):constants,utils \
   --js $(ACCESSIBILITY_UTILS)/js/AuditResults.js \
   --js $(ACCESSIBILITY_UTILS)/js/Audit.js \
   --js $(ACCESSIBILITY_UTILS)/js/AuditRule.js \
   --js $(ACCESSIBILITY_UTILS)/js/AuditRules.js \
   $(AUDIT_RULES) \
+--module_wrapper audits:$(OUTPUT_WRAPPER) \
 --module extension_properties:2:properties \
   --js ./src/extension/ContentScriptFramework.js \
   --js ./src/extension/ExtensionProperties.js \
+--module_wrapper extension_properties:$(OUTPUT_WRAPPER) \
 --module extension_audits:2:audits,extension_properties \
   --js ./src/extension/ExtensionAuditRule.js \
-  --js ./src/extension/ExtensionAuditRules.js
+  --js ./src/extension/ExtensionAuditRules.js \
+--module_wrapper extension_audits:$(OUTPUT_WRAPPER)
 
 MODULES = axs constants utils content properties audits
 
