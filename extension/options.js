@@ -50,20 +50,22 @@
             var div = document.createElement('div');
             div.className = 'checkbox';
             list.appendChild(div);
+            var label = document.createElement('label');
+            div.appendChild(label);
             var input = document.createElement('input');
             input.id = auditRuleName + '-enabled';
             input.type = 'checkbox';
-            div.appendChild(input);
+            label.appendChild(input);
             input.checked = auditRulePrefs[auditRuleName];
             input.addEventListener('click', function(e) {
                 var ruleName = e.target.id.split('-')[0];
                 writeAuditRulePref(ruleName,
                           e.target.checked)
             });
-            var label = document.createElement('label');
-            div.appendChild(label);
-            label.textContent = heading;
-            label.htmlFor = input.id;
+            var span = document.createElement('span');
+            span.textContent = heading;
+            span.htmlFor = input.id;
+            label.appendChild(span);
         }
         if (allChecked)
             document.getElementById('reset-audit-rules').checked = true;

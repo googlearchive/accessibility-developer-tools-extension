@@ -3,12 +3,11 @@
  * found in the LICENSE_CHROMIUM file. */
 
 body {
-  margin: 20px;
-  font-size: 75%;
-  color: rgb(48, 57, 66);
+  color: #333;
+  margin: 14px 17px;
 }
 
-section::before {
+section + section::before {
   background-color: #eee;
   content: ' ';
   display: block;
@@ -17,22 +16,23 @@ section::before {
   top: 0;
 }
 
-header > h1 {
-  margin: 0;
-  padding: 0 0 13px;
+h2 {
+  margin-bottom: 0.65em;
 }
 
 fieldset#audit-rules {
   border: 0 none;
+  padding-top: 0;
 }
 
-.checkbox {
+.checkbox label  {
+  display: -webkit-inline-box;
   padding-bottom: 6px;
   padding-top: 6px;
 }
 
-label {
-  margin-left: 6px;
-  padding-bottom: 3px;
+label input[type=checkbox] ~ span {
+  -webkit-margin-start: 0.6em;
+  display: block;
 }
 

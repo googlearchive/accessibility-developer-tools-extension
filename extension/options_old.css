@@ -70,7 +70,7 @@ fieldset#audit-rules {
   padding-top: 7px;
 }
 
-label {
+label > input[type=checkbox] ~ span {
   margin-left: 7px;
   padding-bottom: 3px;
 }
