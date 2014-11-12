@@ -10,17 +10,26 @@
   <link rel="stylesheet" type="text/css" href="options.css" />
 </head>
 <body>
-  <section>
-    <h2>Select which audit rules to use</h2>
-    <div class="checkbox">
-      <label>
-        <input type="checkbox" id="reset-audit-rules">
-        <span>Select All</span>
-      </label>
+  <div id="main-content">
+    <div id="mainview">
+      <div id="mainview-content">
+      <div id="page-container">
+        <header>
+          <h1>Settings</h1>
+        </header>
+        <section>
+          <h2>Select which audit rules to use</h2>
+          <div class="checkbox">
+            <input type="checkbox" id="reset-audit-rules">
+            <label for="reset-audit-rules">Select All</label>
+          </div>
+          <fieldset id="audit-rules">
+          </fieldset>
+        </section>
+      </div>
+      </div>
     </div>
-    <fieldset id="audit-rules">
-    </fieldset>
-  </section>
+  </div>
   <script type="text/javascript" src="options.js"></script>
 </body>
 </html>
