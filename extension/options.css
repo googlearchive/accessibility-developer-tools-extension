@@ -3,7 +3,7 @@
  * found in the LICENSE_CHROMIUM file. */
 
 body {
-  color: #333;
+  color: rgb(48, 57, 66);
   margin: 14px 17px;
 }
 
@@ -16,8 +16,8 @@ section + section::before {
   top: 0;
 }
 
-h2 {
-  margin-bottom: 0.65em;
+h2, h3 {
+  margin-bottom: 0.8em;
 }
 
 fieldset#audit-rules {
