@@ -10,7 +10,7 @@ TEMPLATES_LIB_FILE = ./extension/Handlebar.js
 TEST_DIR = ./test
 TEST_DEPENDENCIES_FILE = generated_dependencies.js
 TEST_DEPENDENCIES_REL_DIR = generated
-OUTPUT_WRAPPER = 'if (!axs) { var axs = {}; var goog = {}; } %s'
+OUTPUT_WRAPPER = 'if (!axs) var axs = {}; if (!goog) var goog = {}; %s'
 
 CLOSURE_JAR = ~/src/closure/compiler.jar
 EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
