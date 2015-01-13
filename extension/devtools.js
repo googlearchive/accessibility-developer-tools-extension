@@ -57,7 +57,6 @@ function init(result) {
         }
     }
 
-    var numAuditRules = Object.keys(axs.AuditRule.specs).length;
     var category = chrome.experimental.devtools.audits.addCategory(
         chrome.i18n.getMessage('auditTitle'));
 
@@ -109,8 +108,9 @@ function onURLsRetrieved(auditResults, prefs, urls) {
 
     var auditOptions = { 'maxResults': auditResults.maxResults };
     var runInDevtoolsAuditOptions = { 'maxResults': auditResults,
-                                      'contentScriptInjected': contentScriptInjected }
-    for (var auditRuleName in axs.AuditRule.specs) {
+                                      'contentScriptInjected': contentScriptInjected };
+    var auditRuleNames = axs.AuditRules.getRules(true);
+    auditRuleNames.forEach(function(auditRuleName){
         // Run rules by default, fill in prefs for previously unseen rules
         if (!(auditRuleName in prefs))
             prefs[auditRuleName] = true;
@@ -138,7 +138,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
             }
             auditResults.numAuditRules += 1;
         }
-    }
+    });
     // Write filled in prefs back to storage
     chrome.storage.sync.set({'auditRules': prefs});
 }

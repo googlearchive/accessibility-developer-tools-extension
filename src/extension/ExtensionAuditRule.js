@@ -20,15 +20,13 @@ goog.provide('axs.ExtensionAuditRule');
 /**
  * @extends {axs.AuditRule}
  * @constructor
- * @param {axs.AuditRule.Spec} spec
+ * @param {axs.AuditRule} auditRule
  */
-axs.ExtensionAuditRule = function(spec) {
-    axs.AuditRule.call(this, spec);
-
-    /** @type {boolean} */
-    this.requiresConsoleAPI = !!spec['opt_requiresConsoleAPI'];
+axs.ExtensionAuditRule = function(auditRule) {
+    goog.object.extend(auditRule, this);
+    return auditRule;
 };
-goog.inherits(axs.ExtensionAuditRule, axs.AuditRule);
+//goog.inherits(axs.ExtensionAuditRule, axs.AuditRule);
 
 /**
  * Add the given element to the given array. This is to abstract calls to

@@ -26,10 +26,10 @@ axs.ExtensionAuditRules.getRule = function(name) {
     if (!axs.ExtensionAuditRules.rules) {
         /** @type Object.<string, axs.ExtensionAuditRule> */
         axs.ExtensionAuditRules.rules = {};
-        for (var specName in axs.AuditRule.specs) {
-            var spec = axs.AuditRule.specs[specName];
-            var auditRule = new axs.ExtensionAuditRule(spec);
-            axs.ExtensionAuditRules.rules[spec.name] = auditRule;
+        var auditRules = axs.AuditRules.getRules();
+        for (var i = 0; i < auditRules.length; i++) {
+            var auditRule = new axs.ExtensionAuditRule(auditRules[i]);
+            axs.ExtensionAuditRules.rules[auditRule.name] = auditRule;
         }
     }
 
