@@ -26,7 +26,6 @@ axs.ExtensionAuditRule = function(auditRule) {
     goog.object.extend(auditRule, this);
     return auditRule;
 };
-//goog.inherits(axs.ExtensionAuditRule, axs.AuditRule);
 
 /**
  * Add the given element to the given array. This is to abstract calls to
