@@ -16,8 +16,9 @@ CLOSURE_JAR = ~/src/closure/compiler.jar
 EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --formatting PRETTY_PRINT --summary_detail_level 3 --compilation_level SIMPLE_OPTIMIZATIONS \
 --warning_level VERBOSE --externs $(EXTERNS) --externs $(LIB_EXTERNS) \
---module axs:2 \
+--module axs:3 \
   --js ./lib/accessibility-developer-tools/lib/closure-library/closure/goog/base.js \
+  --js ./lib/accessibility-developer-tools/lib/closure-library/closure/goog/object/object.js \
   --js $(ACCESSIBILITY_UTILS)/js/axs.js \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \

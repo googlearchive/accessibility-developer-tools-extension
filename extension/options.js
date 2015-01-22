@@ -38,7 +38,9 @@
         var list = document.querySelector('#audit-rules');
         list.innerHTML = "";
         var allChecked = true;
-        for (var auditRuleName in axs.AuditRule.specs) {
+        var auditRuleNames = axs.AuditRules.getRules(true);
+        for (var i = 0; i < auditRuleNames.length; i++) {
+            var auditRuleName = auditRuleNames[i];
             if (!(auditRuleName in auditRulePrefs)) {
                 // When no pref, default to on
                 auditRulePrefs[auditRuleName] = true;
@@ -60,7 +62,7 @@
             input.addEventListener('click', function(e) {
                 var ruleName = e.target.id.split('-')[0];
                 writeAuditRulePref(ruleName,
-                          e.target.checked)
+                          e.target.checked);
             });
             var span = document.createElement('span');
             span.textContent = heading;
@@ -82,8 +84,10 @@
 
     function toggleSelectAll(e) {
         var on = e.target.checked;
-        var auditRulePrefs = {}
-        for (var auditRuleName in axs.AuditRule.specs) {
+        var auditRulePrefs = {};
+        var auditRuleNames = axs.AuditRules.getRules(true);
+        for (var i = 0; i < auditRuleNames.length; i++) {
+            var auditRuleName = auditRuleNames[i];
             document.getElementById(auditRuleName + '-enabled').checked = on;
             auditRulePrefs[auditRuleName] = on;
         }
@@ -91,4 +95,4 @@
     }
     document.getElementById('reset-audit-rules').addEventListener('click',
                                                                   toggleSelectAll);
-})(document)
+})(document);
