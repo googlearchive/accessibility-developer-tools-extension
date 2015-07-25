@@ -23,7 +23,8 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \
   --module_wrapper constants:$(OUTPUT_WRAPPER) \
---module utils:2:constants \
+--module utils:3:constants \
+  --js $(ACCESSIBILITY_UTILS)/js/Color.js \
   --js $(ACCESSIBILITY_UTILS)/js/AccessibilityUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/BrowserUtils.js \
   --module_wrapper utils:$(OUTPUT_WRAPPER) \

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 chrome.i18n = { };
-chrome.runtime = { };
 chrome.devtools = { };
 chrome.devtools.inspectedWindow = { };
 
