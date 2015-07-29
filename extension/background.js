@@ -25,9 +25,15 @@ function injectContentScript(tabId, remaining_scripts, token) {
             if (remaining_scripts.length) {
                 injectContentScript(tabId, remaining_scripts, token);
             } else if ('callback' in inspectedTabs[tabId]) {
-                var callback = inspectedTabs[tabId].callback;
-                callback({ success: true });
-                delete inspectedTabs[tabId].callback;
+                chrome.tabs.executeScript(
+                    tabId,
+                    { code: 'axs.messagePort = chrome.runtime.connect({name: "axs.content"});' },
+                    function() {
+                        console.log('added axs.messagePort');
+                        var callback = inspectedTabs[tabId].callback;
+                        callback({ success: true });
+                        delete inspectedTabs[tabId].callback;
+                    });
             }
         });
 };
@@ -45,12 +51,18 @@ function injectContentScripts(tabId) {
                     'generated/properties.js',
                     'generated/audits.js',
                     'generated/extension_properties.js',
-                    'generated/extension_audits.js' ]
+                    'generated/extension_audits.js',
+                    'generated/axe.js' ]
     injectContentScript(tabId, scripts, token);
+}
+
+function runAxeRule(ruleId, tabId, callback) {
+    chrome.tabs.sendMessage(tabId, { command: 'runAxeRule', ruleId: ruleId }, callback);
 }
 
 chrome.extension.onRequest.addListener(
     function(request, sender, callback) {
+        console.log('got request', request);
         switch(request.command) {
         case 'injectContentScripts':
             var tabId = request.tabId;
@@ -95,6 +107,10 @@ chrome.extension.onRequest.addListener(
             return;
         case 'getAuditPrefs':
             chrome.storage.sync.get('auditRules', callback);
+            return;
+        case 'runAxeRule':
+            console.log('runAxeRule', request.ruleId, request.tabId);
+            runAxeRule(request.ruleId, request.tabId, callback);
             return;
         }
 });
