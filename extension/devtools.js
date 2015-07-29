@@ -38,7 +38,8 @@ function init(result) {
                                 'generated/properties.js',
                                 'generated/audits.js',
                                 'generated/extension_properties.js',
-                                'generated/extension_audits.js' ];
+                                'generated/extension_audits.js',
+                                'generated/axe.js' ];
             var scripts = [];
             for (var i = 0; i < scriptFiles.length; i++) {
                 try {
@@ -56,6 +57,10 @@ function init(result) {
             allScripts = scripts.join('\n') + '\n';
         }
     }
+
+    backgroundPageConnection = chrome.runtime.connect({
+       name: 'axs.devtools'
+    });
 
     var category = chrome.experimental.devtools.audits.addCategory(
         chrome.i18n.getMessage('auditTitle'));
@@ -139,8 +144,20 @@ function onURLsRetrieved(auditResults, prefs, urls) {
             auditResults.numAuditRules += 1;
         }
     });
+    var axeRuleNames = axe.getRules();
+    axeRuleNames.forEach(function(axeRule) {
+        var axeResultsCallback = handleAxeResults.bind(null, axeRule);
+        console.log('about to sendRequest for ', axeRule.ruleId);
+        chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
+                                       command: 'runAxeRule',
+                                       ruleId: axeRule.ruleId }, axeResultsCallback);
+    });
     // Write filled in prefs back to storage
     chrome.storage.sync.set({'auditRules': prefs});
+}
+
+function handleAxeResults(axeRule, results, isException) {
+    console.log('handleAxeResults', axeRule, results, isException);
 }
 
 function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {

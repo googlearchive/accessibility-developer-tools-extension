@@ -30,6 +30,10 @@
         });
     }
 
+    function writeUseAxePref(pref) {
+        chrome.storage.sync.set({ 'useAxe', pref });
+    }
+
     function writeCheckboxes(prefs) {
         if (!('auditRules' in prefs))
             var auditRulePrefs = {};
@@ -74,10 +78,17 @@
         chrome.storage.sync.set({'auditRules': auditRulePrefs});
     }
 
+    function writeUseAxeCheckbox(useAxePref) {
+//        var extRulesets = document.querySelector
+    }
+
     function getPrefs() {
         chrome.storage.sync.get('auditRules', function gotRules(items) {
             writeCheckboxes(items);
         });
+        chrome.storage.sync.get('useAxe', function gotUseAxe(useAxe) {
+            writeUseAxeCheckbox(useAxe);
+        }
     }
 
     getPrefs();

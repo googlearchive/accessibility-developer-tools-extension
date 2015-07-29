@@ -21,6 +21,13 @@ chrome.devtools.inspectedWindow = { };
  */
 chrome.runtime.id;
 
+chrome.runtime.onMessage = { };
+
+/**
+ * @param {Function} callback
+ */
+chrome.runtime.onMessage.addListener = function(callback) { };
+
 /**
  * @param {string} string
  * @param {Object=} opt_options,
@@ -33,3 +40,12 @@ chrome.devtools.inspectedWindow.eval = function(string, opt_options, opt_callbac
  * @param {...(boolean|number|Object|string)} var_args
  */
 chrome.i18n.getMessage = function(id, var_args) { };
+
+var axe = {};
+
+/**
+ * @param {*} scope
+ * @param {Object=} opts
+ * @param {Function=} callback
+ */
+axe.a11yCheck = function(scope, opts, callback) { };
