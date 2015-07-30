@@ -39,7 +39,8 @@ function init(result) {
                                 'generated/audits.js',
                                 'generated/extension_properties.js',
                                 'generated/extension_audits.js',
-                                'generated/axe.js' ];
+                                'generated/axe.js',
+                                'generated/ExtensionAxeUtils.js' ];
             var scripts = [];
             for (var i = 0; i < scriptFiles.length; i++) {
                 try {
@@ -103,11 +104,13 @@ function auditRunCallback(auditResults, items) {
 function onURLsRetrieved(auditResults, prefs, urls) {
     auditResults.numAuditRules = 0;
     auditResults.resultsPending = 0;
+    auditResults.axeResultsPending = 0;
     auditResults.successfulResults = 0;
-    auditResults.callbacksPending = 0;
     auditResults.passedRules = {};
     auditResults.notApplicableRules = {};
     auditResults.failedRules = {};
+    auditResults.failedAxeRules = {};
+    auditResults.axeRules = {};
     auditResults.truncatedRules = {};
     auditResults.maxResults = 100;  // TODO(alice): pref for maxResults
 
@@ -146,18 +149,44 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     });
     var axeRuleNames = axe.getRules();
     axeRuleNames.forEach(function(axeRule) {
-        var axeResultsCallback = handleAxeResults.bind(null, axeRule);
-        console.log('about to sendRequest for ', axeRule.ruleId);
+        var axeResultsCallback = handleAxeResults.bind(null, auditResults, axeRule);
         chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
                                        command: 'runAxeRule',
                                        ruleId: axeRule.ruleId }, axeResultsCallback);
+        auditResults.axeResultsPending += 1;
+        auditResults.axeRules[axeRule.ruleId] = axeRule;
     });
     // Write filled in prefs back to storage
     chrome.storage.sync.set({'auditRules': prefs});
 }
 
-function handleAxeResults(axeRule, results, isException) {
-    console.log('handleAxeResults', axeRule, results, isException);
+function handleAxeResults(auditResults, axeRule, results, isException) {
+    auditResults.axeResultsPending--;
+    // Should only be one, but it comes wrapped in an object
+    for (var resultNum in results) {
+        var result = results[resultNum];
+        if (result.violations.length === 0)
+            continue;
+        for (var violation of result.violations) {
+            var resultNodes = [];
+            if (!(violation.id in auditResults.failedAxeRules))
+                auditResults.failedAxeRules[violation.id] = resultNodes;
+            else
+                resultNodes = auditResults.failedAxeRules[violation.id];
+            var nodes = violation.nodes;
+            for (var node of nodes) {
+                var parts = node.target[node.target.length - 1].split('#');
+                var frameURL = parts[0];
+                var nodeId = parts[1];
+                resultNodes.push(
+                    auditResults.createNode('axs.content.getResultNode("' + nodeId + '")',
+                                            { useContentScriptContext: contentScriptInjected,
+                                              frameURL: frameURL }));
+            }
+        }
+    }
+    if (auditResults.resultsPending == 0 && auditResults.axeResultsPending == 0)
+        finalizeAuditResults(auditResults);
 }
 
 function handleResults(auditResults, auditRule, severity, frameURL, results, isException) {
@@ -177,7 +206,6 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
         return;
     }
     auditResults.successfulResults++;
-    var resultCallbacksPending = 0;
     if (results.result == axs.constants.AuditResult.PASS) {
         auditResults.passedRules[auditRule.name] = true;
     } else if (results.result == axs.constants.AuditResult.NA ) {
@@ -205,7 +233,7 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
             }
         }
     }
-    if (auditResults.resultsPending == 0 && !auditResults.callbacksPending && !resultCallbacksPending)
+    if (auditResults.resultsPending == 0 && auditResults.axeResultsPending == 0)
         finalizeAuditResults(auditResults);
 }
 
@@ -240,10 +268,27 @@ function addResult(auditResults, auditRuleName, resultNodes, truncated) {
                            auditResults.createResult(resultNodes));
 }
 
+function addAxeResult(auditResults, axeRuleId, resultNodes) {
+    var axeRule = auditResults.axeRules[axeRuleId];
+    var isBestPractice = axeRule.tags.indexOf('best-practice') >= 0;
+    var severity = isBestPractice ? auditResults.Severity.Info : auditResults.Severity.Severe;
+    var severityString = isBestPractice ? 'aXe Best Practice' : 'aXe Violation';
+    var resultString = '[' + severityString + '] ' + axeRule.help + ' (' + resultNodes.length + ')';
+    var url = axeRule.helpUrl;
+    if (url && url != '') {
+        var textNode1 = chrome.i18n.getMessage('auditUrl_before');
+        var urlNode = auditResults.createURL(url, axeRuleId);
+        var textNode2 = chrome.i18n.getMessage('auditUrl_after');
+        resultNodes.unshift(textNode2);
+        resultNodes.unshift(urlNode);
+        resultNodes.unshift(textNode1);
+    }
+    auditResults.addResult(resultString, '', severity, auditResults.createResult(resultNodes));
+}
+
 function finalizeAuditResultsIfNothingPending(auditResults) {
     if (auditResults.resultsPending == 0 &&
-        auditResults.successfulResults < auditResults.numAuditRules &&
-        !auditResults.callbacksPending)
+        auditResults.successfulResults < auditResults.numAuditRules)
         finalizeAuditResults(auditResults);
 }
 
@@ -259,6 +304,11 @@ function finalizeAuditResults(auditResults) {
         var auditRuleName = failedRules[i];
         delete auditResults.passedRules[auditRuleName];
         delete auditResults.notApplicableRules[auditRuleName];
+    }
+
+    for (var axeRuleId in auditResults.failedAxeRules) {
+        var axeResultNodes = auditResults.failedAxeRules[axeRuleId];
+        addAxeResult(auditResults, axeRuleId, axeResultNodes);
     }
 
     var passedRules = Object.keys(auditResults.passedRules);
