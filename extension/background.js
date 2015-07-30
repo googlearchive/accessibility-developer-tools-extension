@@ -57,7 +57,6 @@ function runAxeRule(ruleId, tabId, callback) {
 
 chrome.extension.onRequest.addListener(
     function(request, sender, callback) {
-        console.log('got request', request);
         switch(request.command) {
         case 'injectContentScripts':
             var tabId = request.tabId;
@@ -100,8 +99,12 @@ chrome.extension.onRequest.addListener(
             inspectedTabs[tabId] = { callback: callback };
             injectContentScripts(tabId);
             return;
-        case 'getAuditPrefs':
-            chrome.storage.sync.get('auditRules', callback);
+        case 'getAllPrefs':
+            chrome.storage.sync.get(null, callback);
+            return;
+        case 'setPrefs':
+            console.log('setPrefs', request);
+            chrome.storage.sync.set(request.prefs)
             return;
         case 'runAxeRule':
             runAxeRule(request.ruleId, request.tabId, function() {
