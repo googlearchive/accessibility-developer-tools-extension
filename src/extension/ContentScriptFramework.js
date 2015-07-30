@@ -127,16 +127,13 @@ window.addEventListener('beforeunload', function(e) {
 
 if (window.top === window) {
   chrome.runtime.onMessage.addListener(function(request, sender, callback) {
+    var resultsCallback = callback;
     switch (request.command) {
     case 'runAxeRule':
-        console.log('running aXe rule', request.ruleId);
         axe.a11yCheck(document,
                       { runOnly: { type: "rule", values: [ request.ruleId ] } },
-                      function(results) {
-                                 console.log("results:", results, "rule", request.ruleId);
-                                 callback(results);
-                      });
-        return;
+                      resultsCallback);
+        return true;
     }
   });
 }

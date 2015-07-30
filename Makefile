@@ -59,7 +59,7 @@ js: clean
 	@$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(GENERATED_JS_FILES_DIR)/ && \
     echo "SUCCESS"
 	@/bin/echo -n "* Copying axe lib to $(GENERATED_JS_FILES_DIR): "
-	@/bin/cp ./lib/axe-core/dist/axe.js $(GENERATED_JS_FILES_DIR) && \
+	@/bin/cp ./lib/axe-core/dist/axe.js ./src/extension/ExtensionAxeUtils.js $(GENERATED_JS_FILES_DIR) && \
     echo "SUCCESS"
 	@/bin/echo -n "* Copying Handlebar.js to $(TEMPLATES_LIB_FILE): "
 	@/bin/cp ./lib/templates/js/HandlebarBrowser.js $(TEMPLATES_LIB_FILE) && \

@@ -25,15 +25,9 @@ function injectContentScript(tabId, remaining_scripts, token) {
             if (remaining_scripts.length) {
                 injectContentScript(tabId, remaining_scripts, token);
             } else if ('callback' in inspectedTabs[tabId]) {
-                chrome.tabs.executeScript(
-                    tabId,
-                    { code: 'axs.messagePort = chrome.runtime.connect({name: "axs.content"});' },
-                    function() {
-                        console.log('added axs.messagePort');
-                        var callback = inspectedTabs[tabId].callback;
-                        callback({ success: true });
-                        delete inspectedTabs[tabId].callback;
-                    });
+                var callback = inspectedTabs[tabId].callback;
+                callback({ success: true });
+                delete inspectedTabs[tabId].callback;
             }
         });
 };
@@ -52,7 +46,8 @@ function injectContentScripts(tabId) {
                     'generated/audits.js',
                     'generated/extension_properties.js',
                     'generated/extension_audits.js',
-                    'generated/axe.js' ]
+                    'generated/axe.js',
+                    'generated/ExtensionAxeUtils.js' ];
     injectContentScript(tabId, scripts, token);
 }
 
@@ -109,8 +104,9 @@ chrome.extension.onRequest.addListener(
             chrome.storage.sync.get('auditRules', callback);
             return;
         case 'runAxeRule':
-            console.log('runAxeRule', request.ruleId, request.tabId);
-            runAxeRule(request.ruleId, request.tabId, callback);
+            runAxeRule(request.ruleId, request.tabId, function() {
+                           callback(arguments);
+                       });
             return;
         }
 });
