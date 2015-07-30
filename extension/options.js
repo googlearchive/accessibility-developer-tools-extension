@@ -31,7 +31,7 @@
     }
 
     function writeUseAxePref(pref) {
-        chrome.storage.sync.set({ 'useAxe', pref });
+        chrome.storage.sync.set({ 'useAxe': pref });
     }
 
     function writeCheckboxes(prefs) {
@@ -78,17 +78,35 @@
         chrome.storage.sync.set({'auditRules': auditRulePrefs});
     }
 
-    function writeUseAxeCheckbox(useAxePref) {
-//        var extRulesets = document.querySelector
+    function writeUseAxeCheckbox(useAxe) {
+        var extRulesets = document.querySelector('#external-rulesets');
+        extRulesets.innerHTML = '';
+        var div = document.createElement('div');
+        div.className = 'checkbox';
+        extRulesets.appendChild(div);
+        var label = document.createElement('label');
+        div.appendChild(label);
+        var input = document.createElement('input');
+        input.id = 'axe-enabled';
+        input.type = 'checkbox';
+        label.appendChild(input);
+        input.checked = useAxe;
+        input.addEventListener('click', function(e) {
+            writeUseAxePref(e.target.checked);
+        });
+        var span = document.createElement('span');
+        span.textContent = 'Use aXe ruleset';
+        span.htmlFor = input.id;
+        label.appendChild(span);
     }
 
     function getPrefs() {
         chrome.storage.sync.get('auditRules', function gotRules(items) {
             writeCheckboxes(items);
         });
-        chrome.storage.sync.get('useAxe', function gotUseAxe(useAxe) {
-            writeUseAxeCheckbox(useAxe);
-        }
+        chrome.storage.sync.get('useAxe', function gotUseAxe(useAxePref) {
+            writeUseAxeCheckbox(useAxePref.useAxe);
+        });
     }
 
     getPrefs();

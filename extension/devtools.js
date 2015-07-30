@@ -66,7 +66,7 @@ function init(result) {
     var category = chrome.experimental.devtools.audits.addCategory(
         chrome.i18n.getMessage('auditTitle'));
 
-    category.onAuditStarted.addListener(getAuditPrefs);
+    category.onAuditStarted.addListener(getAllPrefs);
 
     chrome.devtools.panels.elements.createSidebarPane(
         chrome.i18n.getMessage('sidebarTitle'),
@@ -82,18 +82,12 @@ function init(result) {
         });
 }
 
-function getAuditPrefs(auditResults) {
-    chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
-                                   command: 'getAuditPrefs' },
+function getAllPrefs(auditResults) {
+    chrome.extension.sendRequest({ command: 'getAllPrefs' },
                                  auditRunCallback.bind(null, auditResults));
 }
 
-function auditRunCallback(auditResults, items) {
-    if ('auditRules' in items)
-        var prefs = items['auditRules'];
-    else
-        var prefs = {};
-
+function auditRunCallback(auditResults, prefs) {
     var toEval = (contentScriptInjected ? '' : allScripts) + 'axs.content.frameURIs';
     chrome.devtools.inspectedWindow.eval(
             toEval,
@@ -118,12 +112,13 @@ function onURLsRetrieved(auditResults, prefs, urls) {
     var runInDevtoolsAuditOptions = { 'maxResults': auditResults,
                                       'contentScriptInjected': contentScriptInjected };
     var auditRuleNames = axs.AuditRules.getRules(true);
-    auditRuleNames.forEach(function(auditRuleName){
+    var auditRulePrefs = prefs.auditRules || {};
+    auditRuleNames.forEach(function(auditRuleName) {
         // Run rules by default, fill in prefs for previously unseen rules
-        if (!(auditRuleName in prefs))
-            prefs[auditRuleName] = true;
+        if (!(auditRuleName in auditRulePrefs))
+            auditRulePrefs[auditRuleName] = true;
         var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
-        if (!auditRule.disabled && prefs[auditRuleName]) {
+        if (!auditRule.disabled && auditRulePrefs[auditRuleName]) {
             var urlValues = Object.keys(urls);
             for (var i = 0; i < urlValues.length; i++) {
                 var frameURL = urlValues[i];
@@ -147,17 +142,18 @@ function onURLsRetrieved(auditResults, prefs, urls) {
             auditResults.numAuditRules += 1;
         }
     });
-    var axeRuleNames = axe.getRules();
-    axeRuleNames.forEach(function(axeRule) {
-        var axeResultsCallback = handleAxeResults.bind(null, auditResults, axeRule);
-        chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
-                                       command: 'runAxeRule',
-                                       ruleId: axeRule.ruleId }, axeResultsCallback);
-        auditResults.axeResultsPending += 1;
-        auditResults.axeRules[axeRule.ruleId] = axeRule;
-    });
-    // Write filled in prefs back to storage
-    chrome.storage.sync.set({'auditRules': prefs});
+    chrome.extension.sendRequest({ command: 'setPrefs', prefs: { auditRules: auditRulePrefs } });
+    if (prefs.useAxe) {
+        var axeRuleNames = axe.getRules();
+        axeRuleNames.forEach(function(axeRule) {
+            var axeResultsCallback = handleAxeResults.bind(null, auditResults, axeRule);
+            chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
+                                           command: 'runAxeRule',
+                                           ruleId: axeRule.ruleId }, axeResultsCallback);
+            auditResults.axeResultsPending += 1;
+            auditResults.axeRules[axeRule.ruleId] = axeRule;
+        });
+    }
 }
 
 function handleAxeResults(auditResults, axeRule, results, isException) {
