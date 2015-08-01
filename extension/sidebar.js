@@ -88,12 +88,8 @@ function addElementRefEventListener(element, elementRef) {
                              function() {
         var toEval = 'var node = axs.content.getSidebarNode("' + elementRef + '");\n' +
                       'inspect(node);';
-        if (window.sidebar.contentScriptInjected) {
-            chrome.devtools.inspectedWindow.eval(
-                toEval, { useContentScriptContext: true });
-        } else {
-            chrome.devtools.inspectedWindow.eval(toEval);
-        }
+        chrome.devtools.inspectedWindow.eval(
+            toEval, { useContentScriptContext: true });
     });
 }
 
@@ -130,12 +126,8 @@ function addNodeIdEventListener(element, nodeId) {
         var toEval = 'var element = axs.content.getResultNode("' + nodeId +
             '");\n' +
             'if (element) inspect(element);';
-        if (window.sidebar.contentScriptInjected) {
-            chrome.devtools.inspectedWindow.eval(
-                toEval, { useContentScriptContext: true });
-        } else {
-            chrome.devtools.inspectedWindow.eval(toEval);
-        }
+        chrome.devtools.inspectedWindow.eval(
+            toEval, { useContentScriptContext: true });
     });
 }
 
@@ -184,18 +176,11 @@ function applyColors(foreground, background) {
 function gotBaseURI(result) {
     if (!result)
         return;
-    if (window.sidebar.contentScriptInjected) {
-        chrome.devtools.inspectedWindow.eval(
-            'axs.extensionProperties.getAllProperties($0);',
-            { useContentScriptContext: true,
-              frameURL: axs.content.removeFragment(result) },
-            updateView);
-    } else {
-        chrome.devtools.inspectedWindow.eval(
-            'axs.extensionProperties.getAllProperties($0);',
-            { frameURL: axs.content.removeFragment(result) },
-            updateView);
-    }
+    chrome.devtools.inspectedWindow.eval(
+        'axs.extensionProperties.getAllProperties($0);',
+        { useContentScriptContext: true,
+          frameURL: axs.content.removeFragment(result) },
+        updateView);
 }
 
 function onURLsRetrieved(result) {
@@ -212,17 +197,10 @@ function onSelectionChanged() {
     if (!window.sidebar)
         return;
 
-    if (window.sidebar.contentScriptInjected) {
-        chrome.devtools.inspectedWindow.eval(
-            'axs.content.frameURIs;',
-            { useContentScriptContext: true },
-            onURLsRetrieved);
-    } else {
-        chrome.devtools.inspectedWindow.eval(
-            window.sidebar.allScripts + 'axs.content.frameURIs;',
-            {},
-            onURLsRetrieved);
-    }
+    chrome.devtools.inspectedWindow.eval(
+        'axs.content.frameURIs;',
+        { useContentScriptContext: true },
+        onURLsRetrieved);
 }
 
 function insertMessages() {

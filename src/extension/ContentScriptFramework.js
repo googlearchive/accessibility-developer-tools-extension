@@ -49,9 +49,24 @@ axs.content.convertNodeToResult = function(node) {
  * @return {?Node}
  */
 axs.content.getResultNode = function(nodeId) {
+    if (!axs.content.auditResultNodes[nodeId]) {
+        console.error('Failed to find node: ', document);
+    }
     var resultNode = axs.content.auditResultNodes[nodeId];
     delete axs.content.auditResultNodes[nodeId];
     return resultNode;
+};
+
+/**
+ * @param {string} selector
+ * @return {?Node}
+ */
+axs.content.getResultElement = function(selector) {
+    var node = document.querySelector(selector);
+    if (!node) {
+        console.error('could not find node with selector: ', selector);
+    }
+    return node;
 };
 
 /**
@@ -124,19 +139,6 @@ window.addEventListener('beforeunload', function(e) {
                             '*');
 
 }, false);
-
-if (window.top === window) {
-  chrome.runtime.onMessage.addListener(function(request, sender, callback) {
-    var resultsCallback = callback;
-    switch (request.command) {
-    case 'runAxeRule':
-        axe.a11yCheck(document,
-                      { runOnly: { type: "rule", values: [ request.ruleId ] } },
-                      resultsCallback);
-        return true;
-    }
-  });
-}
 
 (function() {
 var iframes = window.frames;
