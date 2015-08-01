@@ -30,7 +30,7 @@ axe.utils.DqElement = function (element, spec) {
         var url = element.ownerDocument.defaultView.location.href;
         var length = ((url.indexOf('#') === -1) ? url.length : url.indexOf('#'));
         url = url.substring(0, length);
-        this.selector = [ url + '#' + axs.content.convertNodeToResult(element)];
+        this.selector = [ url + '#' + axe.utils.getSelector(element)];
     } else {
         this.selector = spec.selector || [''];
     }
@@ -48,3 +48,20 @@ axe.utils.DqElement = function (element, spec) {
      */
     this.element = element;
 };
+
+
+if (window.top === window) {
+    chrome.runtime.onConnect.addListener(function (port) {
+        if (port.name !== 'axeContent') {
+            return;
+        }
+        port.onMessage.addListener(function(msg) {
+          switch(msg.command) {
+            case "runAxeRule":
+              axe.a11yCheck(document, {runOnly:{type:"rule", values:[msg.ruleId]}}, function (results) {
+                port.postMessage({results: results, ruleId: msg.ruleId});
+              });
+          }
+        });
+    });
+}
