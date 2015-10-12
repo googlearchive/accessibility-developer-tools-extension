@@ -13,7 +13,7 @@ TEST_DEPENDENCIES_REL_DIR = generated
 OUTPUT_WRAPPER = 'if (!axs) var axs = {}; if (!goog) var goog = {}; %s'
 
 CLOSURE_JAR = ~/src/closure/compiler.jar
-EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
+EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) --language_in=ECMASCRIPT5 \
 --formatting PRETTY_PRINT --summary_detail_level 3 --compilation_level SIMPLE_OPTIMIZATIONS \
 --warning_level VERBOSE --externs $(EXTERNS) --externs $(LIB_EXTERNS) \
 --module axs:3 \
@@ -23,8 +23,9 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \
   --module_wrapper constants:$(OUTPUT_WRAPPER) \
---module utils:3:constants \
+--module utils:4:constants \
   --js $(ACCESSIBILITY_UTILS)/js/Color.js \
+  --js $(ACCESSIBILITY_UTILS)/js/DOMUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/AccessibilityUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/BrowserUtils.js \
   --module_wrapper utils:$(OUTPUT_WRAPPER) \
