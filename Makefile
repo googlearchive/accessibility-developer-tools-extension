@@ -68,13 +68,16 @@ js: clean
 	@/bin/echo -n "* Copying Handlebar.js to $(TEMPLATES_LIB_FILE): "
 	@/bin/cp ./lib/templates/js/HandlebarBrowser.js $(TEMPLATES_LIB_FILE) && \
     echo "SUCCESS"
-	@/bin/echo -n "concatenating generated files: "
+	@/bin/echo -n "Concatenating generated files: "
 	@/bin/cat $(TEMP_JS_FILES_DIR)/axs.js $(TEMP_JS_FILES_DIR)/constants.js \
 	$(TEMP_JS_FILES_DIR)/utils.js $(TEMP_JS_FILES_DIR)/properties.js \
 	$(TEMP_JS_FILES_DIR)/audits.js $(TEMP_JS_FILES_DIR)/extension_properties.js \
 	$(TEMP_JS_FILES_DIR)/extension_audits.js $(TEMP_JS_FILES_DIR)/axe.js \
 	$(TEMP_JS_FILES_DIR)/ExtensionAxeUtils.js > $(GENERATED_JS_FILES_DIRR)/content.js && \
     echo "SUCCESS"
+	@/bin/echo -n "Removing temp files: "
+	@/bin/rm -rf $(TEMP_JS_FILES_DIR) && \
+    echo "SUCCESS"
 
 clean:
-	@rm -rf $(TEMP_JS_FILES_DIR) $(TEMPLATES_LIB_FILE) $(TEST_DIR)/$(TEST_DEPENDENCIES_REL_DIR)
+	@rm -rf $(GENERATED_JS_FILES_DIR) $(TEMPLATES_LIB_FILE) $(TEST_DIR)/$(TEST_DEPENDENCIES_REL_DIR)
