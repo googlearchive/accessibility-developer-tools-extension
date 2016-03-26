@@ -4,3 +4,6 @@
 [submodule "lib/accessibility-developer-tools"]
 	path = lib/accessibility-developer-tools
 	url = https://github.com/GoogleChrome/accessibility-developer-tools.git
+[submodule "lib/axe-core"]
+	path = lib/axe-core
+	url = https://github.com/dequelabs/axe-core.git

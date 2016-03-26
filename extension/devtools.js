@@ -12,87 +12,126 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var contentScriptInjected = false;
-var allScripts = null;
+var scriptsInjected = false;
+var couldNotInjectScripts = false;
+var contentScript = null;
+var port;
 
-if (chrome.devtools.inspectedWindow.tabId) {
-    chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
-                                   command: 'injectContentScripts' }, init);
-} else {
-    init();
-}
-
-function init(result) {
-    if (result) {
-        if ('error' in result)
-            console.warn('Could not inject content script; falling back to eval',
-                         result.error);
-        else
-            contentScriptInjected = true;
-    }
-    if (!contentScriptInjected) {
-        if (window.File && window.FileReader && window.FileList) {
-            var scriptFiles = [ 'generated/axs.js',
-                                'generated/constants.js',
-                                'generated/utils.js',
-                                'generated/properties.js',
-                                'generated/audits.js',
-                                'generated/extension_properties.js',
-                                'generated/extension_audits.js',
-                                'generated/axe.js',
-                                'generated/ExtensionAxeUtils.js' ];
-            var scripts = [];
-            for (var i = 0; i < scriptFiles.length; i++) {
-                try {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('GET', chrome.extension.getURL(scriptFiles[i]), false);
-                    xhr.send();
-                    scripts.push(xhr.responseText);
-                } catch(ex) {
-                    console.error('Could not get script "' + scriptFiles[i] + '";  aborting.',
-                                  ex);
-                    return;
-                }
-
-            }
-            allScripts = scripts.join('\n') + '\n';
-        }
-    }
-
-    backgroundPageConnection = chrome.runtime.connect({
-       name: 'axs.devtools'
+/**
+ * create a connection to the background page and listen for the
+ * connection to close. This happens when the target browser loads
+ * a new page. Which means we need to inject the scripts again and
+ * reconnect.
+ *
+ * The port is used in a quasi-synchronous fashion. A listener will
+ * be attached when the script is being injected and then removed.
+ * This means that no other communication can happen until the
+ * response comes back from the injection (however, no other request
+ * makes sense until the script has been injected anyway)
+ */
+function setupPort() {
+    port = chrome.runtime.connect({name: 'axs.devtools'});
+    port.onDisconnect.addListener(function () {
+        console.log('port disconnected');
+        port = undefined;
+        scriptsInjected = false;
+        couldNotInjectScripts = false;
     });
-
-    var category = chrome.experimental.devtools.audits.addCategory(
-        chrome.i18n.getMessage('auditTitle'));
-
-    category.onAuditStarted.addListener(getAllPrefs);
-
-    chrome.devtools.panels.elements.createSidebarPane(
-        chrome.i18n.getMessage('sidebarTitle'),
-        function(sidebar) {
-            sidebar.setPage("sidebar.html");
-            sidebar.onShown.addListener(function(window) {
-                window.sidebar = sidebar;
-                window.sidebar.contentScriptInjected = contentScriptInjected;
-                if (!contentScriptInjected)
-                    window.sidebar.allScripts = allScripts;
-                window.onSelectionChanged();
-            });
-        });
 }
+
+var category = chrome.experimental.devtools.audits.addCategory(
+    chrome.i18n.getMessage('auditTitle'));
+
+function fetchContentScript() {
+  var scriptFile = 'generated/content.js'
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', chrome.extension.getURL(scriptFile), false);
+    xhr.send();
+    contentScript = xhr.responseText;
+  } catch(ex) {
+    console.error('Could not get script "' + scriptFile + '";  aborting.',
+                  ex);
+  }
+}
+
+function injectScripts(after) {
+    var callback = function (result) {
+        if (result.err) {
+            console.warn('Could not inject content script; falling back to eval', result.err.message);
+            couldNotInjectScripts = true;
+            fetchContentScript();
+        } else {
+            scriptsInjected = true;
+        }
+        after();
+        port.onMessage.removeListener(callback);
+    };
+    port.onMessage.addListener(callback);
+    port.postMessage({
+        command: 'injectScript',
+        tabId: chrome.devtools.inspectedWindow.tabId
+    });
+}
+
+/**
+ * This listener is called when the user starts an audit. It
+ * will open up a port to the background page and inject the
+ * scripts into the target page before doing anything else if
+ * this is needed (first time an analysis is done on the active
+ * page)
+ */
+
+category.onAuditStarted.addListener(function (auditResults) {
+    if (!port) {
+        setupPort();
+    }
+    if (!scriptsInjected && !couldNotInjectScripts) {
+        injectScripts(getAllPrefs.bind(null, auditResults));
+    } else {
+        getAllPrefs(auditResults);
+    }
+});
+
+
+/**
+ * Setup the sidebar panel and listen for its show event
+ */
+
+chrome.devtools.panels.elements.createSidebarPane(
+    chrome.i18n.getMessage('sidebarTitle'),
+    function(sidebar) {
+        sidebar.setPage("sidebar.html");
+        sidebar.onShown.addListener(function(window) {
+            function setup() {
+                window.sidebar = sidebar;
+                window.sidebar.contentScriptInjected = scriptsInjected;
+                if (!contentScriptInjected)
+                    window.sidebar.allScripts = contentScript;
+                window.onSelectionChanged();
+            }
+            if (!port) {
+                setupPort();
+            }
+            if (!scriptsInjected) {
+                injectScripts(setup);
+            } else {
+                setup();
+            }
+        });
+    });
 
 function getAllPrefs(auditResults) {
     chrome.extension.sendRequest({ command: 'getAllPrefs' },
-                                 auditRunCallback.bind(null, auditResults));
+        auditRunCallback.bind(null, auditResults));
 }
 
 function auditRunCallback(auditResults, prefs) {
-    var toEval = (contentScriptInjected ? '' : allScripts) + 'axs.content.frameURIs';
+    var toEval = (couldNotInjectScripts ? contentScript : '') + '\naxs.content.frameURIs';
     chrome.devtools.inspectedWindow.eval(
-            toEval,
-            { useContentScriptContext: contentScriptInjected },
-            onURLsRetrieved.bind(null, auditResults, prefs));
+        toEval,
+        { useContentScriptContext: !couldNotInjectScripts },
+        onURLsRetrieved.bind(null, auditResults, prefs));
 }
 
 function onURLsRetrieved(auditResults, prefs, urls) {
@@ -110,7 +149,7 @@ function onURLsRetrieved(auditResults, prefs, urls) {
 
     var auditOptions = { 'maxResults': auditResults.maxResults };
     var runInDevtoolsAuditOptions = { 'maxResults': auditResults,
-                                      'contentScriptInjected': contentScriptInjected };
+                                      'contentScriptInjected': scriptsInjected };
     var auditRuleNames = axs.AuditRules.getRules(true);
     var auditRulePrefs = prefs.auditRules || {};
     auditRuleNames.forEach(function(auditRuleName) {
@@ -119,50 +158,67 @@ function onURLsRetrieved(auditResults, prefs, urls) {
             auditRulePrefs[auditRuleName] = true;
         var auditRule = axs.ExtensionAuditRules.getRule(auditRuleName);
         if (!auditRule.disabled && auditRulePrefs[auditRuleName]) {
-            var urlValues = Object.keys(urls);
-            for (var i = 0; i < urlValues.length; i++) {
-                var frameURL = urlValues[i];
-                var resultsCallback = handleResults.bind(null, auditResults, auditRule,
+            var resultsCallback = handleResults.bind(null, auditResults, auditRule,
                                                          auditRule.severity, frameURL);
-                if (auditRule.requiresConsoleAPI) {
-                    auditRule.runInDevtools(runInDevtoolsAuditOptions, resultsCallback);
-                } else {
+            if (auditRule.requiresConsoleAPI) {
+                auditRule.runInDevtools(runInDevtoolsAuditOptions, resultsCallback);
+                auditResults.resultsPending += 1;
+            } else if (!couldNotInjectScripts) {
+                var urlValues = Object.keys(urls);
+                for (var i = 0; i < urlValues.length; i++) {
+                    var frameURL = urlValues[i];
+
                     var stringToEval =
                         'var rule = axs.ExtensionAuditRules.getRule("' + auditRuleName + '");\n' +
                         'rule.run(' + JSON.stringify(auditOptions) + ');';
 
                     chrome.devtools.inspectedWindow.eval(
                         stringToEval,
-                        { useContentScriptContext: contentScriptInjected,
+                        { useContentScriptContext: true,
                           frameURL: frameURL },
                         resultsCallback);
+                    auditResults.resultsPending += 1;
                 }
+            } else {
+                var stringToEval =
+                    'var rule = axs.ExtensionAuditRules.getRule("' + auditRuleName + '");\n' +
+                    'rule.run(' + JSON.stringify(auditOptions) + ');';
+
+                chrome.devtools.inspectedWindow.eval(
+                    stringToEval,
+                    { useContentScriptContext: false },
+                    resultsCallback);
+
                 auditResults.resultsPending += 1;
             }
             auditResults.numAuditRules += 1;
         }
     });
     chrome.extension.sendRequest({ command: 'setPrefs', prefs: { auditRules: auditRulePrefs } });
-    if (prefs.useAxe) {
+    if (prefs.useAxe && !couldNotInjectScripts) {
         var axeRuleNames = axe.getRules();
         axeRuleNames.forEach(function(axeRule) {
             var axeResultsCallback = handleAxeResults.bind(null, auditResults, axeRule);
-            chrome.extension.sendRequest({ tabId: chrome.devtools.inspectedWindow.tabId,
-                                           command: 'runAxeRule',
-                                           ruleId: axeRule.ruleId }, axeResultsCallback);
+            var callback = function (msg) {
+                if (msg.ruleId === axeRule.ruleId) {
+                    axeResultsCallback(msg.results);
+                    port.onMessage.removeListener(callback);
+                }
+            }
+            port.postMessage({ tabId: chrome.devtools.inspectedWindow.tabId,
+                               command: 'runAxeRule',
+                               ruleId: axeRule.ruleId });
+            port.onMessage.addListener(callback);
             auditResults.axeResultsPending += 1;
             auditResults.axeRules[axeRule.ruleId] = axeRule;
         });
     }
 }
 
-function handleAxeResults(auditResults, axeRule, results, isException) {
+function handleAxeResults(auditResults, axeRule, result, isException) {
     auditResults.axeResultsPending--;
     // Should only be one, but it comes wrapped in an object
-    for (var resultNum in results) {
-        var result = results[resultNum];
-        if (result.violations.length === 0)
-            continue;
+    if (result.violations.length !== 0) {
         for (var violation of result.violations) {
             var resultNodes = [];
             if (!(violation.id in auditResults.failedAxeRules))
@@ -171,12 +227,12 @@ function handleAxeResults(auditResults, axeRule, results, isException) {
                 resultNodes = auditResults.failedAxeRules[violation.id];
             var nodes = violation.nodes;
             for (var node of nodes) {
-                var parts = node.target[node.target.length - 1].split('#');
-                var frameURL = parts[0];
-                var nodeId = parts[1];
+                var info = node.target[node.target.length - 1];
+                var frameURL = info.substring(0, info.indexOf('#'));
+                var nodeId = info.replace(frameURL + '#', '');
                 resultNodes.push(
-                    auditResults.createNode('axs.content.getResultNode("' + nodeId + '")',
-                                            { useContentScriptContext: contentScriptInjected,
+                    auditResults.createNode('axs.content.getResultElement("' + nodeId + '")',
+                                            { useContentScriptContext: !couldNotInjectScripts,
                                               frameURL: frameURL }));
             }
         }
@@ -221,7 +277,7 @@ function handleResults(auditResults, auditRule, severity, frameURL, results, isE
             if (resultNodes.length < auditResults.maxResults) {
                 resultNodes.push(
                     auditResults.createNode('axs.content.getResultNode("' + result + '")',
-                                            { useContentScriptContext: contentScriptInjected,
+                                            { useContentScriptContext: !couldNotInjectScripts,
                                               frameURL: frameURL }));
             } else {
                 auditResults.truncatedRules[auditRule.name] = true;
@@ -284,6 +340,7 @@ function addAxeResult(auditResults, axeRuleId, resultNodes) {
 
 function finalizeAuditResultsIfNothingPending(auditResults) {
     if (auditResults.resultsPending == 0 &&
+        auditResults.axeResultsPending == 0 &&
         auditResults.successfulResults < auditResults.numAuditRules)
         finalizeAuditResults(auditResults);
 }

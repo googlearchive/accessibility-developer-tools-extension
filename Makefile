@@ -5,7 +5,9 @@ NUM_AUDIT_RULE_SOURCES = `expr $(NUM_AUDIT_RULES) + 4`
 EXTERNS = ./src/js/externs.js
 LIB_EXTERNS = $(ACCESSIBILITY_UTILS)/js/externs/externs.js
 
-GENERATED_JS_FILES_DIR = ./extension/generated
+TEMP_JS_FILES_DIR = ./temp
+INTRO_EXTRO_JS_FILES_DIR = ./src/intro
+GENERATED_JS_FILES_DIRR = ./extension/generated
 TEMPLATES_LIB_FILE = ./extension/Handlebar.js
 TEST_DIR = ./test
 TEST_DEPENDENCIES_FILE = generated_dependencies.js
@@ -13,7 +15,7 @@ TEST_DEPENDENCIES_REL_DIR = generated
 OUTPUT_WRAPPER = 'if (!axs) var axs = {}; if (!goog) var goog = {}; %s'
 
 CLOSURE_JAR = ~/src/closure/compiler.jar
-EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
+EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) --language_in=ECMASCRIPT5 \
 --formatting PRETTY_PRINT --summary_detail_level 3 --compilation_level SIMPLE_OPTIMIZATIONS \
 --warning_level VERBOSE --externs $(EXTERNS) --externs $(LIB_EXTERNS) \
 --module axs:3 \
@@ -23,10 +25,12 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) \
 --module constants:1:axs \
   --js $(ACCESSIBILITY_UTILS)/js/Constants.js \
   --module_wrapper constants:$(OUTPUT_WRAPPER) \
---module utils:3:constants \
+--module utils:4:constants \
   --js $(ACCESSIBILITY_UTILS)/js/Color.js \
+  --js $(ACCESSIBILITY_UTILS)/js/DOMUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/AccessibilityUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/BrowserUtils.js \
+  --js $(ACCESSIBILITY_UTILS)/js/DOMUtils.js \
   --module_wrapper utils:$(OUTPUT_WRAPPER) \
 --module properties:1:utils,constants \
   --js $(ACCESSIBILITY_UTILS)/js/Properties.js \
@@ -54,15 +58,25 @@ MODULES = axs constants utils content properties audits
 js: clean
 	@echo "\nStand back! I'm rebuilding!\n---------------------------"
 	@/bin/echo -n "* Rebuilding generated JS modules: "
-	@/bin/echo -n "$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(GENERATED_JS_FILES_DIR)/"
+	@/bin/echo -n "$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(TEMP_JS_FILES_DIR)/"
 	@/bin/echo
-	@$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(GENERATED_JS_FILES_DIR)/ && \
+	@$(EXTENSION_CLOSURE_COMMAND) --module_output_path_prefix $(TEMP_JS_FILES_DIR)/ && \
     echo "SUCCESS"
-	@/bin/echo -n "* Copying axe lib to $(GENERATED_JS_FILES_DIR): "
-	@/bin/cp ./lib/axe-core/dist/axe.js ./src/extension/ExtensionAxeUtils.js $(GENERATED_JS_FILES_DIR) && \
+	@/bin/echo -n "* Copying axe lib to $(TEMP_JS_FILES_DIR): "
+	@/bin/cp ./lib/axe-core/dist/axe.js ./src/extension/ExtensionAxeUtils.js $(TEMP_JS_FILES_DIR) && \
     echo "SUCCESS"
 	@/bin/echo -n "* Copying Handlebar.js to $(TEMPLATES_LIB_FILE): "
 	@/bin/cp ./lib/templates/js/HandlebarBrowser.js $(TEMPLATES_LIB_FILE) && \
+    echo "SUCCESS"
+	@/bin/echo -n "Concatenating generated files: "
+	@/bin/cat $(TEMP_JS_FILES_DIR)/axs.js $(TEMP_JS_FILES_DIR)/constants.js \
+	$(TEMP_JS_FILES_DIR)/utils.js $(TEMP_JS_FILES_DIR)/properties.js \
+	$(TEMP_JS_FILES_DIR)/audits.js $(TEMP_JS_FILES_DIR)/extension_properties.js \
+	$(TEMP_JS_FILES_DIR)/extension_audits.js $(TEMP_JS_FILES_DIR)/axe.js \
+	$(TEMP_JS_FILES_DIR)/ExtensionAxeUtils.js > $(GENERATED_JS_FILES_DIRR)/content.js && \
+    echo "SUCCESS"
+	@/bin/echo -n "Removing temp files: "
+	@/bin/rm -rf $(TEMP_JS_FILES_DIR) && \
     echo "SUCCESS"
 
 clean:
