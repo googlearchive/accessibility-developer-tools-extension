@@ -30,10 +30,9 @@ function injectContentScript(tabId, port) {
         tabId, {
             file: 'generated/content.js',
             allFrames: true
-        }, function() {
+        }, function(arg) {
             port.postMessage({
                 command: 'injectScript',
-                status: 'success',
                 err: chrome.runtime.lastError
             });
         });
