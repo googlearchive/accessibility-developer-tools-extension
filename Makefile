@@ -28,6 +28,7 @@ EXTENSION_CLOSURE_COMMAND = java -jar $(CLOSURE_JAR) --language_in=ECMASCRIPT5 \
   --js $(ACCESSIBILITY_UTILS)/js/DOMUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/AccessibilityUtils.js \
   --js $(ACCESSIBILITY_UTILS)/js/BrowserUtils.js \
+  --js $(ACCESSIBILITY_UTILS)/js/DOMUtils.js \
   --module_wrapper utils:$(OUTPUT_WRAPPER) \
 --module properties:1:utils,constants \
   --js $(ACCESSIBILITY_UTILS)/js/Properties.js \
